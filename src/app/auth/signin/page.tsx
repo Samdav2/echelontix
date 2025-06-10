@@ -3,9 +3,8 @@ import React from 'react'
 function SignIn() {
   return (
     <div>
-        {/* Design the sign in page here */}
-        SignIn
-        </div>
+        {/* Code the sign in page here */}
+    </div>
   )
 }
 
