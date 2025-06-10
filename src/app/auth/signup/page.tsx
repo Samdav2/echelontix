@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useAuth } from '../../../hooks/useAuth';
 
 export default function CreateAccountPage() {
   const [form, setForm] = useState({
@@ -11,6 +12,7 @@ export default function CreateAccountPage() {
     password: "",
     confirmPassword: "",
   });
+  const { signUp, loading } = useAuth();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -18,8 +20,7 @@ export default function CreateAccountPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form logic (validation, submission, etc.)
-    console.log("Form submitted:", form);
+    signUp(form); 
   };
 
   return (
@@ -83,7 +84,7 @@ export default function CreateAccountPage() {
             type="submit"
             className="w-full bg-blue-600 text-white py-3 rounded-lg text-sm font-semibold hover:bg-blue-700 transition"
           >
-            SIGN UP
+           {loading ? "Signing up....." :  "SIGN UP"}
           </button>
         </form>
         <p className="text-center text-white text-sm mt-4">
