@@ -1,6 +1,15 @@
-'use client'
+'use client';
 
-import { Plus, Calendar, Users, TrendingUp, MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import {
+  Plus,
+  Calendar,
+  Users,
+  TrendingUp,
+  Edit,
+  Trash2
+} from "lucide-react";
+
+type EventStatus = 'published' | 'draft' | 'ended';
 
 const mockEvents = [
   {
@@ -12,7 +21,7 @@ const mockEvents = [
     attendees: 245,
     maxAttendees: 300,
     revenue: 12250,
-    status: 'published',
+    status: 'published' as EventStatus,
     image: 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=400&h=300&fit=crop'
   },
   {
@@ -24,7 +33,7 @@ const mockEvents = [
     attendees: 1200,
     maxAttendees: 1500,
     revenue: 48000,
-    status: 'published',
+    status: 'published' as EventStatus,
     image: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=400&h=300&fit=crop'
   },
   {
@@ -36,7 +45,7 @@ const mockEvents = [
     attendees: 0,
     maxAttendees: 100,
     revenue: 0,
-    status: 'draft',
+    status: 'draft' as EventStatus,
     image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop'
   }
 ];
@@ -46,7 +55,7 @@ export default function CreatorDashboard() {
   const totalAttendees = mockEvents.reduce((sum, event) => sum + event.attendees, 0);
   const publishedEvents = mockEvents.filter(event => event.status === 'published').length;
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: EventStatus): string => {
     switch (status) {
       case 'published': return 'bg-green-500';
       case 'draft': return 'bg-yellow-500';
@@ -55,7 +64,7 @@ export default function CreatorDashboard() {
     }
   };
 
-  const getStatusText = (status) => {
+  const getStatusText = (status: EventStatus): string => {
     switch (status) {
       case 'published': return 'Live';
       case 'draft': return 'Draft';
