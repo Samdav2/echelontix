@@ -46,7 +46,7 @@ export default function CreatorDashboard() {
   const totalAttendees = mockEvents.reduce((sum, event) => sum + event.attendees, 0);
   const publishedEvents = mockEvents.filter(event => event.status === 'published').length;
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: any) => {
     switch (status) {
       case 'published': return 'bg-green-500';
       case 'draft': return 'bg-yellow-500';
@@ -55,7 +55,7 @@ export default function CreatorDashboard() {
     }
   };
 
-  const getStatusText = (status) => {
+  const getStatusText = (status: any) => {
     switch (status) {
       case 'published': return 'Live';
       case 'draft': return 'Draft';
