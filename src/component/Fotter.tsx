@@ -42,7 +42,7 @@ const Footer: React.FC = () => {
         {/* Contact Us */}
         <div className="md:col-span-2">
           <h3 className="font-semibold mb-3 uppercase">Contact Us</h3>
-          <p>Contact us on Owl_Initiators for more update</p>
+          <p>Contact us on Echelontix for more update</p>
           <p>Provide details for follow-up or queries regarding the booking</p>
 
           <div className="flex gap-4 mt-4 text-yellow-400 text-lg">
