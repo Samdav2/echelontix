@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 // ---------------- Types & Data ----------------
 
@@ -33,6 +34,7 @@ const categories = Object.keys(events);
 
 const FeaturedEvents = () => {
   const [active, setActive] = useState<string>("Concert");
+
 
   return (
     <section className="bg-black text-white py-16 px-4">
@@ -84,6 +86,12 @@ const FeaturedEvents = () => {
 // ---------------- Main Landing Page ----------------
 
 const LandingPage = () => {
+  const router = useRouter();
+
+  const goToExplore = () => {
+    router.push("/explore");
+  }
+
   return (
     <main className="w-full bg-black text-white font-sans">
       {/* HERO SECTION */}
@@ -179,8 +187,15 @@ const LandingPage = () => {
         </div>
       </section>
 
+
+      <section className="bg-white">
+        <div className="max-w-6xl mx-auto py-16 px-6 lg:px-24 text-center">
+          <button className="bg-black px-14 cursor-pointer rounded-xl py-4 shadow-2xl transition-shadow hover:border-[#000] hover:bg-transparent hover:border-2 hover:text-black" onClick={goToExplore}>Explore More</button>
+        </div>
+      </section>
+
       {/* NEW EVENTS */}
-      <section className="bg-black py-16 px-6 lg:px-24">
+      {/* <section className="bg-black py-16 px-6 lg:px-24">
         <h2 className="text-2xl font-bold text-center mb-10">NEW EVENTS</h2>
         <div className="flex flex-col lg:flex-row gap-10 items-center">
           <div className="max-w-md w-full">
@@ -213,10 +228,10 @@ const LandingPage = () => {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* CONTACT FORM */}
-      <section className="bg-white text-black py-16 px-6 lg:px-24 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+      {/* <section className="bg-white text-black py-16 px-6 lg:px-24 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
         <form className="space-y-4">
           <input
             type="text"
@@ -249,7 +264,7 @@ const LandingPage = () => {
             className="rounded-lg"
           />
         </div>
-      </section>
+      </section> */}
     </main>
   );
 };
