@@ -28,6 +28,7 @@ export default function RootLayout({
 }>) {
   const pathname = usePathname();
   const isDashboard = pathname.startsWith("/dashboard");
+  const isExplore = pathname.startsWith("/explore")
 
   return (
     <html lang="en">
@@ -35,6 +36,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {!isDashboard && <Navbar />}
+        {!isExplore && <Navbar />}
         {children}
         {!isDashboard && <Fotter />}
       </body>
