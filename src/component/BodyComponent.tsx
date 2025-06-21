@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 type Event = {
   title: string;
   image: string;
+  location?: string;
 };
 
 type EventsByCategory = {
@@ -17,10 +18,10 @@ type EventsByCategory = {
 
 const events: EventsByCategory = {
   Concert: [
-    { title: "HEARTBEAT & RHYTHM", image: "/assets/love.svg" },
-    { title: "LASU FOOD FEST", image: "/assets/food.svg" },
-    { title: "UNLEASH 2.0", image: "/assets/love.svg" },
-    { title: "HEARTBEAT & RHYTHM", image: "/assets/food.svg" },
+    { title: "HEARTBEAT & RHYTHM", image: "/assets/love.svg", location: "Lagos, NG" },
+    { title: "LASU FOOD FEST", image: "/assets/food.svg", location: "Ojo Campus" },
+    { title: "UNLEASH 2.0", image: "/assets/love.svg", location: "Surulere" },
+    { title: "HEARTBEAT & RHYTHM", image: "/assets/food.svg", location: "Mainland" },
   ],
   "House Party": [],
   "Pool Party": [],
@@ -30,82 +31,39 @@ const events: EventsByCategory = {
 
 const categories = Object.keys(events);
 
-// ---------------- Featured Events Component ----------------
-
-const FeaturedEvents = () => {
-  const [active, setActive] = useState<string>("Concert");
-
-
-  return (
-    <section className="bg-black text-white py-16 px-4">
-      <div className="flex justify-center gap-4 flex-wrap mb-12">
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setActive(cat)}
-            className={`px-6 py-2 text-sm font-semibold rounded-full transition ${
-              active === cat
-                ? "bg-yellow-400 text-black"
-                : "bg-gray-800 hover:bg-gray-700"
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
-
-      <div className="text-center mb-10">
-        <h2 className="text-3xl font-bold">{active}</h2>
-        <div className="mt-1 h-1 w-12 bg-yellow-400 mx-auto rounded" />
-      </div>
-
-      <div className="flex flex-wrap justify-center gap-6">
-        {events[active]?.map((event, idx) => (
-          <div
-            key={idx}
-            className="w-[180px] h-[280px] bg-white rounded-lg overflow-hidden shadow-lg hover:scale-105 transition-transform"
-          >
-            <Image
-              src={event.image}
-              alt={event.title}
-              width={180}
-              height={280}
-              className="object-cover w-full h-full"
-            />
-          </div>
-        ))}
-      </div>
-
-      <p className="text-center text-sm text-gray-400 mt-10 tracking-wider">
-        FEATURED EVENTS
-      </p>
-    </section>
-  );
-};
-
 // ---------------- Main Landing Page ----------------
 
 const LandingPage = () => {
   const router = useRouter();
+  const [active, setActive] = useState<string>("Concert");
 
-  const goToExplore = () => {
-    router.push("/explore");
-  }
+  const Register = () => router.push("/choose-role");
+  const login = () => router.push("/auth/signin");
+
+  const handleEventClick = () => {
+    router.push("/registration");
+  };
 
   return (
     <main className="w-full bg-black text-white font-sans">
       {/* HERO SECTION */}
-      <section className="relative w-full flex flex-col lg:flex-row items-center justify-between px-6 lg:px-24 pt-20 pb-16 bg-black">
+      <section className="relative w-full flex flex-col lg:flex-row items-center justify-between px-6 lg:px-24 pt-20 pb-4 bg-black">
         <div className="max-w-xl text-center lg:text-left">
           <h1 className="text-4xl lg:text-6xl font-bold mb-4">ECHELONTIX</h1>
           <p className="text-lg mb-6">
             Your trusted partner in innovation and event management.
           </p>
           <div className="flex justify-center lg:justify-start gap-4">
-            <button className="border border-yellow-400 px-6 py-2 rounded-full hover:bg-yellow-400 hover:text-black transition-all">
+            <button
+              className="border border-yellow-400 px-6 py-2 rounded-full hover:bg-yellow-400 hover:text-black transition-all"
+              onClick={login}
+            >
               Log in
             </button>
-            <button className="bg-yellow-400 text-black px-6 py-2 rounded-full hover:bg-yellow-300 transition-all">
+            <button
+              className="text-white border border-yellow-400 px-6 py-2 rounded-full hover:bg-yellow-400 hover:text-black transition-all"
+              onClick={Register}
+            >
               Register
             </button>
           </div>
@@ -121,10 +79,51 @@ const LandingPage = () => {
         </div>
       </section>
 
-      
+      {/* CATEGORIES & EVENTS */}
+      <section className="bg-black text-white pt-8 pb-16 px-4">
+        <div className="flex justify-center gap-4 flex-wrap mb-10">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActive(cat)}
+              className={`px-6 py-2 text-sm font-semibold rounded-full transition ${
+                active === cat
+                  ? "bg-yellow-400 text-black"
+                  : "bg-gray-800 hover:bg-gray-700"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
 
-      {/* FEATURED EVENTS */}
-      <FeaturedEvents />
+        <div className="text-center mb-10">
+          <h2 className="text-3xl font-bold">{active}</h2>
+          <div className="mt-1 h-1 w-12 bg-yellow-400 mx-auto rounded" />
+        </div>
+
+        <div className="flex flex-wrap justify-center gap-8">
+          {events[active]?.map((event, idx) => (
+            <div
+              key={idx}
+              className="text-center cursor-pointer"
+              onClick={handleEventClick}
+            >
+              <div className="w-[180px] h-[280px] bg-white rounded-lg overflow-hidden shadow-lg hover:scale-105 transition-transform">
+                <Image
+                  src={event.image}
+                  alt={event.title}
+                  width={180}
+                  height={280}
+                  className="object-cover w-full h-full"
+                />
+              </div>
+              <h4 className="text-md font-semibold mt-3">{event.title}</h4>
+              <p className="text-sm text-gray-400">{event.location}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* SPOTLIGHT BANNER */}
       <section className="relative w-full h-[550px] bg-black text-white overflow-hidden">
@@ -152,7 +151,7 @@ const LandingPage = () => {
               <h2 className="text-xl md:text-2xl font-bold">
                 LASU Food Festival
               </h2>
-              <div className="flex items-center gap-6 text-sm text-gray-600 mt-1">
+              <div className="flex items-center gap-6 text-sm text-gray-600 mt-2">
                 <span>📅 Jan 30</span>
                 <span>🕖 7:00pm</span>
               </div>
@@ -186,85 +185,6 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
-
-
-      <section className="bg-white">
-        <div className="max-w-6xl mx-auto py-16 px-6 lg:px-24 text-center">
-          <button className="bg-black px-14 cursor-pointer rounded-xl py-4 shadow-2xl transition-shadow hover:border-[#000] hover:bg-transparent hover:border-2 hover:text-black" onClick={goToExplore}>Explore More</button>
-        </div>
-      </section>
-
-      {/* NEW EVENTS */}
-      {/* <section className="bg-black py-16 px-6 lg:px-24">
-        <h2 className="text-2xl font-bold text-center mb-10">NEW EVENTS</h2>
-        <div className="flex flex-col lg:flex-row gap-10 items-center">
-          <div className="max-w-md w-full">
-            <Image
-              src="/assets/lasu-food.svg"
-              alt="Featured Event"
-              width={400}
-              height={300}
-              className="rounded-lg w-full"
-            />
-            <h3 className="text-lg font-semibold mt-4">
-              Heartbeat & Rhythm (Love Fest)
-            </h3>
-            <p className="text-sm text-gray-400">Location & time details here</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
-            {new Array(4).fill(0).map((_, i) => (
-              <div key={i} className="text-sm">
-                <Image
-                  src="/assets/lasu-food.svg"
-                  alt="Small Event"
-                  width={120}
-                  height={90}
-                  className="rounded-lg"
-                />
-                <h4 className="font-semibold mt-2">LASU FOOD FESTIVAL</h4>
-                <p className="text-gray-400">Quick details</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section> */}
-
-      {/* CONTACT FORM */}
-      {/* <section className="bg-white text-black py-16 px-6 lg:px-24 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-        <form className="space-y-4">
-          <input
-            type="text"
-            placeholder="Name"
-            className="w-full border border-gray-300 p-3 rounded"
-          />
-          <input
-            type="email"
-            placeholder="Email Address"
-            className="w-full border border-gray-300 p-3 rounded"
-          />
-          <textarea
-            placeholder="Message"
-            rows={5}
-            className="w-full border border-gray-300 p-3 rounded"
-          ></textarea>
-          <button
-            type="submit"
-            className="bg-yellow-400 px-6 py-3 rounded hover:bg-yellow-300"
-          >
-            Send Message
-          </button>
-        </form>
-        <div className="hidden md:block">
-          <Image
-            src="/assets/OIP.svg"
-            alt="Contact Visual"
-            width={400}
-            height={300}
-            className="rounded-lg"
-          />
-        </div>
-      </section> */}
     </main>
   );
 };

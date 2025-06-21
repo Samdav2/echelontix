@@ -1,4 +1,5 @@
-"use client"
+"use client";
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Navbar from "../component/Navbar";
@@ -27,20 +28,26 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const pathname = usePathname();
-  const isDashboard = pathname.startsWith("/dashboard");
-  const isExplore = pathname.startsWith("/explore")
+
+  // Hide layout on these paths
+  const hideLayout =
+    pathname.startsWith("/auth") ||
+    pathname === "/signin" ||
+    pathname === "/signup" ||
+    pathname === "/choose-role" ||
+    pathname === "/registration" ||
+    pathname === "/create-event" ||
+    pathname.startsWith("/dashboard");
 
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {!isDashboard && <Navbar />}
-        {!isExplore && <Navbar />}
+        {!hideLayout && <Navbar />}
         {children}
-        {!isDashboard && <Fotter />}
+        {!hideLayout && <Fotter />}
       </body>
     </html>
   );
 }
-

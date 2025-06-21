@@ -1,4 +1,7 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   FaFacebookF,
   FaInstagram,
@@ -7,6 +10,17 @@ import {
 } from "react-icons/fa";
 
 const Footer: React.FC = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const router = useRouter();
+
+  const signin = () => {
+    router.push("/auth/signin");
+  };
+
+  const home = () => {
+    router.push("/home");
+  };
+
   return (
     <footer className="bg-gray-900 text-white py-10 px-6 md:px-20">
       <div className="flex justify-between items-center mb-8">
@@ -34,8 +48,12 @@ const Footer: React.FC = () => {
         <div>
           <h3 className="font-semibold mb-3 uppercase">Join Us</h3>
           <ul className="space-y-2">
-            <li><a href="#" className="hover:underline">Sign in</a></li>
-            <li><a href="#" className="hover:underline">Sign out</a></li>
+            <li>
+              <button onClick={signin} className="hover:underline">Sign in</button>
+            </li>
+
+            <li>
+              <button onClick={home} className="hover:underline">Sign out</button></li>
           </ul>
         </div>
 
