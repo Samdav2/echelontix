@@ -24,8 +24,10 @@ const ChooseRolePage: React.FC = () => {
   const router = useRouter();
 
   const handleRoleSelect = (role: string) => {
-    router.push(`/signup?role=${role}`);
+    router.push(`/auth/signup?role=${role}`);
   };
+
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white to-slate-100 flex items-center justify-center px-4 py-12">

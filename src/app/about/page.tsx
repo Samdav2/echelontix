@@ -23,7 +23,7 @@ const AboutPage = () => {
       {/* About Section */}
       <section className="bg-pink-100 px-6 py-12 ">
         <h2 className="text-4xl font-bold mb-4">Who we are...</h2>
-        <p className="max-w-3xl mx-auto text-lg font-medium text-black mt-2 space-y-2 ">
+        <p className="max-w-3xl mx-auto text-lg list-inside font-medium text-black mt-2 space-y-2 ">
           <strong>ECHELONTIX</strong> is an event hub where anyone can discover new events, read about past events, and get tickets. We handle the ticketing system for events, both online and offline, for event planners across Nigeria.
         </p>
       </section>
