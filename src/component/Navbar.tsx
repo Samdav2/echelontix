@@ -12,8 +12,9 @@ const Navbar = () => {
   const chooseRole = () => router.push("/choose-role");
 
   return (
-    <header className="absolute top-0 left-0 w-full z-50">
-      <nav className="bg-gradient-to-r from-black to-gray-900 text-white py-2 px-4">
+    <header className="absolute top-0 left-0 w-full z-50 ">
+      <nav className="bg-gradient-to-r from-black to-gray-900 text-white py-2 px-4 border-b border-yellow-400 md:border-b-transparent">
+
         <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
 
           {/* Hamburger Button */}

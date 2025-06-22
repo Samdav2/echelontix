@@ -1,7 +1,31 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
+
+const router = useRouter();
+const [role, setRole] = useState<string | null>(null);
+
+useEffect(() => {
+  const storedRole = localStorage.getItem('selectedRole');
+  if (storedRole) {
+    setRole(storedRole);
+  }
+}, []);
+
+const handleSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
+
+  // Simulate account creation success
+  if (role === 'organizer') {
+    router.push('/organizer-dashboard');
+  } else if (role === 'attendee') {
+    router.push('/attendee-dashboard');
+  } else {
+    router.push('/dashboard'); // fallback or default
+  }
+};
 
 
 const SignUpPage: React.FC = () => {
@@ -40,7 +64,7 @@ const SignUpPage: React.FC = () => {
         </h3>
 
         {/* Form */}
-        <form className="space-y-4">
+        <form className="space-y-4 onSubmit={handleSubmit}">
           {/* First Name */}
           <input
             type="text"

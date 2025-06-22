@@ -9,17 +9,16 @@ import {
   FaPaperPlane,
 } from "react-icons/fa";
 
-const Footer: React.FC = () => {
+const Footer = () => {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
 
-  const signin = () => {
-    router.push("/auth/signin");
-  };
-
-  const home = () => {
-    router.push("/home");
-  };
+  const signin = () => router.push("/auth/signin");
+  const home = () => router.push("/home");
+  const explore = () => router.push("/explore");
+  const goToAbout = () => router.push("/about");
+  const pricing = () => router.push("/pricing");
+  const team = () => router.push("/team");
 
   return (
     <footer className="bg-gray-900 text-white py-10 px-6 md:px-20">
@@ -35,12 +34,12 @@ const Footer: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 text-sm">
         {/* Links */}
         <div>
-          <h3 className="font-semibold mb-3 uppercase">Link</h3>
+          <h3 className="font-semibold mb-3 uppercase">Links</h3>
           <ul className="space-y-2">
-            <li><a href="#" className="hover:underline">Home</a></li>
-            <li><a href="#" className="hover:underline">Event</a></li>
-            <li><a href="#" className="hover:underline">Team</a></li>
-            <li><a href="#" className="hover:underline">Book Tickets</a></li>
+            <li><button onClick={home} className="hover:underline">Home</button></li>
+            <li><button onClick={team} className="hover:underline">Team</button></li>
+            <li><button onClick={explore} className="hover:underline">Book Tickets</button></li>
+            <li><button onClick={pricing} className="hover:underline">Pricing</button></li>
           </ul>
         </div>
 
@@ -48,20 +47,16 @@ const Footer: React.FC = () => {
         <div>
           <h3 className="font-semibold mb-3 uppercase">Join Us</h3>
           <ul className="space-y-2">
-            <li>
-              <button onClick={signin} className="hover:underline">Sign in</button>
-            </li>
-
-            <li>
-              <button onClick={home} className="hover:underline">Sign out</button></li>
+            <li><button onClick={signin} className="hover:underline">Sign in</button></li>
+            <li><button onClick={home} className="hover:underline">Sign out</button></li>
           </ul>
         </div>
 
         {/* Contact Us */}
         <div className="md:col-span-2">
           <h3 className="font-semibold mb-3 uppercase">Contact Us</h3>
-          <p>Contact us on Echelontix for more update</p>
-          <p>Provide details for follow-up or queries regarding the booking</p>
+          <p>Contact us on Echelontix for more updates</p>
+          <p>Provide details for follow-up or queries regarding booking</p>
 
           <div className="flex gap-4 mt-4 text-yellow-400 text-lg">
             <a href="#"><FaFacebookF /></a>
@@ -84,7 +79,7 @@ const Footer: React.FC = () => {
       <hr className="border-gray-700 mt-8 mb-4" />
 
       <div className="text-center text-xs text-gray-400">
-        ©2024 ECHELONTIX. All Right Reserved.
+        ©2024 ECHELONTIX. All Rights Reserved.
       </div>
     </footer>
   );
