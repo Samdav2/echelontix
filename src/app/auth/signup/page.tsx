@@ -4,46 +4,50 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 
-const router = useRouter();
-const [role, setRole] = useState<string | null>(null);
-
-useEffect(() => {
-  const storedRole = localStorage.getItem('selectedRole');
-  if (storedRole) {
-    setRole(storedRole);
-  }
-}, []);
-
-const handleSubmit = (e: React.FormEvent) => {
-  e.preventDefault();
-
-  // Simulate account creation success
-  if (role === 'organizer') {
-    router.push('/organizer-dashboard');
-  } else if (role === 'attendee') {
-    router.push('/attendee-dashboard');
-  } else {
-    router.push('/dashboard'); // fallback or default
-  }
-};
-
-
 const SignUpPage: React.FC = () => {
+  
+  const router = useRouter();
+  const [role, setRole] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // This useEffect now correctly belongs to the SignUpPage component's lifecycle
+  useEffect(() => {
+    const storedRole = localStorage.getItem('selectedRole');
+    if (storedRole) {
+      setRole(storedRole);
+    }
+  }, []); // The empty dependency array means this runs once when the component mounts
+
+  // The handleSubmit function should also be inside the component
+  // so it has access to `router` and `role` from the component's scope.
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Simulate account creation success
+    // In a real app, you would handle form data here
+    if (role === 'organizer') {
+      router.push('/organizer-dashboard');
+    } else if (role === 'attendee') {
+      router.push('/attendee-dashboard');
+    } else {
+      router.push('/dashboard'); // A fallback or default route
+    }
+  };
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
   const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(!showConfirmPassword);
 
+  // --- FIX ENDS HERE ---
+
   return (
     <div
-      className="min-h-screen bg-cover bg-center flex items-center justify-center px-4 py-10  backdrop-blur-lg bg-white/30"
+      className="min-h-screen bg-cover bg-center flex items-center justify-center px-4 py-10 backdrop-blur-lg bg-white/30"
       style={{
-        backgroundImage: "url('/assets/ba.jpg')", // Replace with your background image path
+        backgroundImage: "url('/assets/ba.jpg')",
       }}
     >
-      <div className="w-full max-w-xl max-w-md backdrop-blur-lg bg-black/30 border border-white/40 rounded-2xl p-8 shadow-xl">
-        {/* Logo */}
+      <div className="w-full max-w-xl backdrop-blur-lg bg-black/30 border border-white/40 rounded-2xl p-8 shadow-xl">
         <div className="mx-auto mb-6 text-center">
           <div className="w-28 h-28 mx-auto rounded-full bg-black flex items-center justify-center">
             <img
@@ -54,18 +58,16 @@ const SignUpPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Heading */}
         <h1 className="text-2xl font-bold mb-6 text-black text-center">
           Welcome to ECHELONTIX
         </h1>
 
-        <h3 className=" font-bold mb-3 text-black ">
+        <h3 className="font-bold mb-3 text-black">
           Please Create Your Account
         </h3>
 
-        {/* Form */}
-        <form className="space-y-4 onSubmit={handleSubmit}">
-          {/* First Name */}
+        {/* ✅ The onSubmit prop was also missing its curly braces {} */}
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <input
             type="text"
             placeholder="First Name"
@@ -73,7 +75,6 @@ const SignUpPage: React.FC = () => {
             required
           />
 
-          {/* Last Name */}
           <input
             type="text"
             placeholder="Last Name"
@@ -81,7 +82,6 @@ const SignUpPage: React.FC = () => {
             required
           />
 
-          {/* Email */}
           <input
             type="email"
             placeholder="Email"
@@ -89,7 +89,6 @@ const SignUpPage: React.FC = () => {
             required
           />
 
-          {/* Password */}
           <div className="relative">
             <input
               type={showPassword ? 'text' : 'password'}
@@ -110,7 +109,6 @@ const SignUpPage: React.FC = () => {
             )}
           </div>
 
-          {/* Confirm Password */}
           <div className="relative">
             <input
               type={showConfirmPassword ? 'text' : 'password'}
@@ -131,7 +129,6 @@ const SignUpPage: React.FC = () => {
             )}
           </div>
 
-          {/* Remember me */}
           <label className="flex items-center space-x-2 text-sm text-black">
             <input
               type="checkbox"
@@ -141,7 +138,6 @@ const SignUpPage: React.FC = () => {
             <span>Remember me</span>
           </label>
 
-          {/* Sign Up Button */}
           <button
             type="submit"
             className="w-full bg-black text-white font-semibold py-3 rounded-full hover:bg-gray-900 transition"
@@ -150,21 +146,18 @@ const SignUpPage: React.FC = () => {
           </button>
         </form>
 
-        {/* Divider */}
         <div className="flex items-center my-6">
           <div className="flex-grow border-t border-gray-300" />
           <span className="px-2 text-sm text-black-700">Or Sign up with</span>
           <div className="flex-grow border-t border-gray-300" />
         </div>
 
-        {/* Social Buttons */}
         <div className="flex justify-center space-x-4">
           <button className="flex justify-center p-3 border rounded-full bg-white/70">
             <img src="/assets/google-icon.svg" alt="Google" className="w-6 h-6" />
           </button>
         </div>
 
-        {/* Footer */}
         <p className="text-sm text-black mt-6 text-center">
           Already have an account?{' '}
           <a href="/signIn" className="text-blue-600 font-semibold underline">
