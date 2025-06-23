@@ -156,7 +156,7 @@ const LandingPage = () => {
                 <span>🕖 7:00pm</span>
               </div>
               <div className="flex items-center gap-4 mt-4">
-                <button className="bg-yellow-400 hover:bg-yellow-500 transition px-5 py-2 text-sm font-semibold rounded">
+                <button onClick={handleEventClick} className="bg-yellow-400 hover:bg-yellow-500 transition px-5 py-2 text-sm font-semibold rounded">
                   Get Tickets
                 </button>
                 <a href="#" className="text-blue-600 text-sm hover:underline">
