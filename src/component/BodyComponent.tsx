@@ -41,7 +41,8 @@ const LandingPage = () => {
   const login = () => router.push("/auth/signin");
 
   const handleEventClick = () => {
-    router.push("/registration");
+    // router.push("/registration");
+    router.push("/#")
   };
 
   return (
