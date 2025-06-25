@@ -1,4 +1,14 @@
+'use client';
+
+import { useEffect, useState } from "react";
 import { Calendar, Clock, MapPin, Ticket, TrendingUp, Users, Star, CheckCircle } from "lucide-react";
+
+// Define the structure for the user data we expect from localStorage
+interface UserData {
+  name: string;
+  email: string;
+  // Add any other user properties you expect, e.g., avatarUrl
+}
 
 interface AttendedEvent {
   id: string;
@@ -20,57 +30,35 @@ interface UpcomingEvent {
   category: string;
 }
 
+// --- MOCK DATA (In a real app, this would be fetched from an API) ---
 const attendedEvents: AttendedEvent[] = [
-  {
-    id: '1',
-    title: 'Summer Music Festival',
-    date: '2024-05-15',
-    location: 'Central Park, NYC',
-    category: 'Music',
-    rating: 5
-  },
-  {
-    id: '2',
-    title: 'Tech Innovation Summit',
-    date: '2024-04-20',
-    location: 'Convention Center',
-    category: 'Tech',
-    rating: 4
-  },
-  {
-    id: '3',
-    title: 'Modern Art Exhibition',
-    date: '2024-03-30',
-    location: 'Metropolitan Museum',
-    category: 'Art',
-    rating: 5
-  }
+  { id: '1', title: 'Summer Music Festival', date: '2024-05-15', location: 'Central Park, NYC', category: 'Music', rating: 5 },
+  { id: '2', title: 'Tech Innovation Summit', date: '2024-04-20', location: 'Convention Center', category: 'Tech', rating: 4 },
+  { id: '3', title: 'Modern Art Exhibition', date: '2024-03-30', location: 'Metropolitan Museum', category: 'Art', rating: 5 }
 ];
 
 const upcomingEvents: UpcomingEvent[] = [
-  {
-    id: '4',
-    title: 'Food & Wine Tasting',
-    date: '2024-09-10',
-    time: '07:00 PM',
-    location: 'Rooftop Restaurant',
-    ticketType: 'VIP',
-    price: 120,
-    category: 'Food'
-  },
-  {
-    id: '5',
-    title: 'Basketball Championship',
-    date: '2024-07-25',
-    time: '08:00 PM',
-    location: 'Sports Arena',
-    ticketType: 'General',
-    price: 85,
-    category: 'Sports'
-  }
+  { id: '4', title: 'Food & Wine Tasting', date: '2024-09-10', time: '07:00 PM', location: 'Rooftop Restaurant', ticketType: 'VIP', price: 120, category: 'Food' },
+  { id: '5', title: 'Basketball Championship', date: '2024-07-25', time: '08:00 PM', location: 'Sports Arena', ticketType: 'General', price: 85, category: 'Sports' }
 ];
+// --- END MOCK DATA ---
 
-export default function AttendeeDashboard ()  {
+
+export default function AttendeeDashboard() {
+  // State to hold the user data retrieved from localStorage
+  const [userData, setUserData] = useState<UserData | null>(null);
+
+  // useEffect runs once when the component mounts to get data from localStorage
+  useEffect(() => {
+    const storedUserData = localStorage.getItem('userData');
+    if (storedUserData) {
+      // Parse the stored string back into a JavaScript object
+      const parsedData = JSON.parse(storedUserData);
+      setUserData(parsedData);
+    }
+  }, []); // The empty dependency array ensures this effect runs only once
+
+
   const getCategoryColor = (category: string) => {
     const colors = {
       'Music': 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
@@ -95,13 +83,22 @@ export default function AttendeeDashboard ()  {
     ));
   };
 
+  // Display a loading message while user data is being fetched from localStorage
+  if (!userData) {
+    return (
+      <div className="p-6 text-center">
+        <p>Loading Dashboard...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">My Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Track your event journey and upcoming experiences</p>
+          <p className="text-muted-foreground mt-1">Welcome back, {userData.name}!</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-300">
@@ -112,8 +109,9 @@ export default function AttendeeDashboard ()  {
             />
           </div>
           <div>
-            <div className="font-semibold text-foreground">John Doe</div>
-            <div className="text-sm text-muted-foreground">Event Enthusiast</div>
+            {/* Display the user's name and email dynamically */}
+            <div className="font-semibold text-foreground">{userData.name}</div>
+            <div className="text-sm text-muted-foreground">{userData.email}</div>
           </div>
         </div>
       </div>

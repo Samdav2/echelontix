@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation'; // Import the router
 import {
   Plus,
   Calendar,
@@ -8,6 +10,14 @@ import {
   Edit,
   Trash2
 } from "lucide-react";
+
+// Define the structure for the creator data we expect from localStorage
+interface CreatorData {
+  name: string;
+  email: string;
+  brand: string; // The property that identifies a creator
+  // Add any other creator properties you expect
+}
 
 type EventStatus = 'published' | 'draft' | 'ended';
 
@@ -51,6 +61,33 @@ const mockEvents = [
 ];
 
 export default function CreatorDashboard() {
+  const router = useRouter(); // Initialize router for redirection
+  // State to hold the creator data from localStorage
+  const [creatorData, setCreatorData] = useState<CreatorData | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // Add loading state to prevent flash of content
+
+  // useEffect runs once to get data from localStorage when the component mounts
+  useEffect(() => {
+    const storedUserData = localStorage.getItem('userData');
+
+    if (storedUserData) {
+      const parsedData = JSON.parse(storedUserData);
+      console.log(storedUserData)
+      // We assume if 'brand' exists, it's a creator
+      if (parsedData && parsedData.brandname) {
+        setCreatorData(parsedData);
+      } else {
+        // If user data exists but they aren't a creator, redirect them
+        router.push('/auth/signin');
+      }
+    } else {
+      // If no user is logged in at all, redirect to login
+      router.push('/auth/signin');
+    }
+
+    setIsLoading(false); // Set loading to false after the check is complete
+  }, [router]);
+
   const totalRevenue = mockEvents.reduce((sum, event) => sum + event.revenue, 0);
   const totalAttendees = mockEvents.reduce((sum, event) => sum + event.attendees, 0);
   const publishedEvents = mockEvents.filter(event => event.status === 'published').length;
@@ -73,13 +110,23 @@ export default function CreatorDashboard() {
     }
   };
 
+  // Show a loading state until the checks in useEffect are complete
+  if (isLoading || !creatorData) {
+    return (
+      <div className="p-6 text-center">
+        <p>Loading Creator Dashboard...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Creator Dashboard</h1>
-          <p className="text-gray-500 mt-1">Manage your events and track performance</p>
+          {/* Personalize the welcome message with the brand name */}
+          <p className="text-gray-500 mt-1">Welcome, {creatorData.brand}! Manage your events and track performance.</p>
         </div>
         <button className="flex items-center bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition">
           <Plus className="w-4 h-4 mr-2" />
