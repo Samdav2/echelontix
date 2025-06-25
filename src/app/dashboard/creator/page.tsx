@@ -1,12 +1,15 @@
 'use client';
 
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Plus,
   Calendar,
   Users,
   TrendingUp,
   Edit,
-  Trash2
+  Trash2,
+  Settings
 } from "lucide-react";
 
 type EventStatus = 'published' | 'draft' | 'ended';
@@ -51,6 +54,7 @@ const mockEvents = [
 ];
 
 export default function CreatorDashboard() {
+  const router = useRouter();
   const totalRevenue = mockEvents.reduce((sum, event) => sum + event.revenue, 0);
   const totalAttendees = mockEvents.reduce((sum, event) => sum + event.attendees, 0);
   const publishedEvents = mockEvents.filter(event => event.status === 'published').length;
@@ -73,15 +77,53 @@ export default function CreatorDashboard() {
     }
   };
 
+  const goToCreateEvent = () => {
+    router.push('/create-event');
+  };
+
+  const goToExplore = () => {
+    router.push('/explore');
+  };
+
+  const handleEdit = (id: string) => {
+    router.push(`/edit-event/${id}`);
+  };
+
+  const handleDelete = (id: string) => {
+    alert(`Deleted event with ID: ${id}`);
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Creator Dashboard</h1>
+          <h1 className="text-3xl font-bold">Welcome Desmond</h1>
           <p className="text-gray-500 mt-1">Manage your events and track performance</p>
         </div>
-        <button className="flex items-center bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-300">
+            <img
+              src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
+              alt="Avatar"
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div>
+            <div className="font-semibold text-foreground">Desmond Doe</div>
+            <div className="text-sm text-muted-foreground">johndoe@email.com</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Top Buttons */}
+      <div className="flex justify-between">
+        <button className="flex items-center text-white hover:text-white-900">
+          <Settings className="w-5 h-5 mr-2" />
+          Settings
+        </button>
+
+        <button onClick={goToCreateEvent} className="flex items-center bg-yellow-600 text-white px-4 py-2 rounded shadow hover:bg-yellow-700 transition">
           <Plus className="w-4 h-4 mr-2" />
           Create Event
         </button>
@@ -115,6 +157,16 @@ export default function CreatorDashboard() {
         </div>
       </div>
 
+       {/* Top Buttons */}
+      <div className="flex justify-between">
+
+        <button onClick={goToExplore} className="flex items-center bg-yellow-700 text-white px-4 py-2 rounded shadow hover:bg-yellow-800 transition">
+          <Plus className="w-4 h-4 mr-2" />
+           Explore
+        </button>
+      </div>
+
+
       {/* Events List */}
       <div className="rounded-lg shadow p-6 bg-white">
         <h2 className="text-xl font-semibold mb-4">Your Events</h2>
@@ -137,18 +189,18 @@ export default function CreatorDashboard() {
               </div>
               <div className="text-right">
                 <p className="text-sm text-gray-500">Attendees</p>
-                <p className="text-lg font-semibold">{event.attendees}/{event.maxAttendees}</p>
+                <p className="text-lg text-gray-400 font-semibold">{event.attendees}/{event.maxAttendees}</p>
               </div>
               <div className="text-right">
                 <p className="text-sm text-gray-500">Revenue</p>
-                <p className="text-lg font-semibold">${event.revenue.toLocaleString()}</p>
+                <p className="text-lg text-gray-400 font-semibold">${event.revenue.toLocaleString()}</p>
               </div>
               <div className="flex gap-2">
-                <button className="text-blue-600 hover:underline flex items-center text-sm">
+                <button onClick={() => handleEdit(event.id)} className="text-blue-600 hover:underline flex items-center text-sm">
                   <Edit className="w-4 h-4 mr-1" />
                   Edit
                 </button>
-                <button className="text-red-600 hover:underline flex items-center text-sm">
+                <button onClick={() => handleDelete(event.id)} className="text-red-600 hover:underline flex items-center text-sm">
                   <Trash2 className="w-4 h-4 mr-1" />
                   Delete
                 </button>
@@ -159,4 +211,4 @@ export default function CreatorDashboard() {
       </div>
     </div>
   );
-}
+};

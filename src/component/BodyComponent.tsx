@@ -10,6 +10,7 @@ type Event = {
   title: string;
   image: string;
   location?: string;
+  date: string;
 };
 
 type EventsByCategory = {
@@ -18,15 +19,15 @@ type EventsByCategory = {
 
 const events: EventsByCategory = {
   Concert: [
-    { title: "HEARTBEAT & RHYTHM", image: "/assets/love.svg", location: "Lagos, NG" },
-    { title: "LASU FOOD FEST", image: "/assets/food.svg", location: "Ojo Campus" },
-    { title: "UNLEASH 2.0", image: "/assets/love.svg", location: "Surulere" },
-    { title: "HEARTBEAT & RHYTHM", image: "/assets/food.svg", location: "Mainland" },
+    { title: "HEARTBEAT & RHYTHM", image: "/assets/love.svg", location: "Lagos, NG", date: "2024-03-01" },
+    { title: "LASU FOOD FEST", image: "/assets/food.svg", location: "Ojo Campus", date: "2024-04-15" },
+    { title: "UNLEASH 2.0", image: "/assets/love.svg", location: "Surulere", date: "2024-02-20" },
+    { title: "HEARTBEAT & RHYTHM", image: "/assets/food.svg", location: "Mainland", date: "2024-01-10" },
   ],
   "House Party": [],
-  "Pool Party": [],
-  "Club Party": [],
   "Beach Party": [],
+  "Tech": [],
+  "Seminars Party": [],
 };
 
 const categories = Object.keys(events);
@@ -39,10 +40,17 @@ const LandingPage = () => {
 
   const Register = () => router.push("/choose-role");
   const login = () => router.push("/auth/signin");
+  const handleEventClick = () => router.push("/registration");
 
-  const handleEventClick = () => {
-    router.push("/registration");
+  const spotlightEvent = {
+    title: "LASU Food Festival",
+    date: "2024-01-30",
+    time: "19:00",
+    location: "Ojo, Lagos",
+    image: "/assets/lasu-food.svg"
   };
+
+  const isSpotlightPast = new Date(spotlightEvent.date) < new Date();
 
   return (
     <main className="w-full bg-black text-white font-sans">
@@ -103,25 +111,36 @@ const LandingPage = () => {
         </div>
 
         <div className="flex flex-wrap justify-center gap-8">
-          {events[active]?.map((event, idx) => (
-            <div
-              key={idx}
-              className="text-center cursor-pointer"
-              onClick={handleEventClick}
-            >
-              <div className="w-[180px] h-[280px] bg-white rounded-lg overflow-hidden shadow-lg hover:scale-105 transition-transform">
-                <Image
-                  src={event.image}
-                  alt={event.title}
-                  width={180}
-                  height={280}
-                  className="object-cover w-full h-full"
-                />
+          {events[active]?.map((event, idx) => {
+            const isPast = new Date(event.date) < new Date();
+
+            return (
+              <div
+                key={idx}
+                className="text-center cursor-pointer"
+                onClick={() => {
+                  if (!isPast) handleEventClick();
+                }}
+              >
+                <div className="relative w-[180px] h-[280px] bg-white rounded-lg overflow-hidden shadow-lg hover:scale-105 transition-transform">
+                  <Image
+                    src={event.image}
+                    alt={event.title}
+                    width={180}
+                    height={280}
+                    className="object-cover w-full h-full"
+                  />
+                  {isPast && (
+                    <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
+                      Past Event
+                    </div>
+                  )}
+                </div>
+                <h4 className="text-md font-semibold mt-3">{event.title}</h4>
+                <p className="text-sm text-gray-400">{event.location}</p>
               </div>
-              <h4 className="text-md font-semibold mt-3">{event.title}</h4>
-              <p className="text-sm text-gray-400">{event.location}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
@@ -149,16 +168,20 @@ const LandingPage = () => {
                 Event
               </p>
               <h2 className="text-xl md:text-2xl font-bold">
-                LASU Food Festival
+                {spotlightEvent.title}
               </h2>
               <div className="flex items-center gap-6 text-sm text-gray-600 mt-2">
                 <span>📅 Jan 30</span>
                 <span>🕖 7:00pm</span>
               </div>
               <div className="flex items-center gap-4 mt-4">
-                <button onClick={handleEventClick} className="bg-yellow-400 hover:bg-yellow-500 transition px-5 py-2 text-sm font-semibold rounded">
-                  Get Tickets
-                </button>
+                {!isSpotlightPast ? (
+                  <button onClick={handleEventClick} className="bg-yellow-400 hover:bg-yellow-500 transition px-5 py-2 text-sm font-semibold rounded">
+                    Get Tickets
+                  </button>
+                ) : (
+                  <span className="text-sm font-semibold text-red-500">Event Ended</span>
+                )}
                 <a href="#" className="text-blue-600 text-sm hover:underline">
                   View Details
                 </a>
@@ -167,8 +190,8 @@ const LandingPage = () => {
 
             <div className="w-full md:w-1/3">
               <Image
-                src="/assets/lasu-food.svg"
-                alt="LASU Food Festival"
+                src={spotlightEvent.image}
+                alt={spotlightEvent.title}
                 width={300}
                 height={200}
                 className="w-full h-auto rounded"
@@ -176,7 +199,6 @@ const LandingPage = () => {
             </div>
           </div>
 
-          {/* Arrows */}
           <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-20 bg-yellow-400 w-10 h-10 flex items-center justify-center rounded-full cursor-pointer">
             <span className="text-black font-bold text-xl">&larr;</span>
           </div>
