@@ -37,6 +37,7 @@ export default function RootLayout({
     pathname === "/choose-role" ||
     pathname === "/registration" ||
     pathname === "/create-event" ||
+    pathname === "/update-profile" ||
     pathname.startsWith("/dashboard");
 
   return (

@@ -246,7 +246,7 @@ const InterestSelection = () => {
                     ? "bg-red-600 text-white"
                     : tab === "past"
                     ? "bg-gray-600 text-white"
-                    : "bg-purple-600 text-white"
+                    : "bg-yellow-600 text-white"
                   : "text-gray-300 hover:bg-gray-700"
               }`}
             >

@@ -12,6 +12,9 @@ import {
   Settings
 } from "lucide-react";
 
+
+// Types
+
 type EventStatus = 'published' | 'draft' | 'ended';
 
 const mockEvents = [
@@ -59,6 +62,8 @@ export default function CreatorDashboard() {
   const totalAttendees = mockEvents.reduce((sum, event) => sum + event.attendees, 0);
   const publishedEvents = mockEvents.filter(event => event.status === 'published').length;
 
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
   const getStatusColor = (status: any) => {
     switch (status) {
       case 'published': return 'bg-green-500';
@@ -83,6 +88,14 @@ export default function CreatorDashboard() {
 
   const goToExplore = () => {
     router.push('/explore');
+  };
+
+  const goToUpdateProfile = () => {
+    router.push('/update-profile');
+  };
+
+  const logout = () => {
+    router.push('/auth/signin');
   };
 
   const handleEdit = (id: string) => {
@@ -117,16 +130,49 @@ export default function CreatorDashboard() {
       </div>
 
       {/* Top Buttons */}
-      <div className="flex justify-between">
-        <button className="flex items-center text-white hover:text-white-900">
-          <Settings className="w-5 h-5 mr-2" />
-          Settings
-        </button>
+      <div className="flex justify-between items-center">
+        <div className="relative">
+          <button
+            onClick={() => setSettingsOpen(!settingsOpen)}
+            className="flex items-center text-white hover:text-white-900"
+          >
+            <Settings className="w-5 h-5 mr-2" />
+            Settings
+          </button>
 
-        <button onClick={goToCreateEvent} className="flex items-center bg-yellow-600 text-white px-4 py-2 rounded shadow hover:bg-yellow-700 transition">
-          <Plus className="w-4 h-4 mr-2" />
-          Create Event
-        </button>
+          {settingsOpen && (
+            <div className="absolute z-10 mt-2 w-40 bg-white text-black rounded shadow-lg py-2">
+              <button
+                onClick={goToUpdateProfile}
+                className="w-full text-left px-4 py-2 hover:bg-gray-100"
+              >
+                Update Profile
+              </button>
+              <button
+                onClick={logout}
+                className="w-full text-left px-4 py-2 hover:bg-gray-100"
+              >
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            onClick={goToExplore}
+            className="bg-purple-700 text-white px-4 py-2 rounded shadow hover:bg-purple-800 transition"
+          >
+            Explore
+          </button>
+
+          <button
+            onClick={goToCreateEvent}
+            className="bg-yellow-600 text-white px-4 py-2 rounded shadow hover:bg-yellow-700 transition"
+          >
+            Create Event
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -156,16 +202,6 @@ export default function CreatorDashboard() {
           <p className="text-xs text-purple-600 mt-1">Events currently live</p>
         </div>
       </div>
-
-       {/* Top Buttons */}
-      <div className="flex justify-between">
-
-        <button onClick={goToExplore} className="flex items-center bg-yellow-700 text-white px-4 py-2 rounded shadow hover:bg-yellow-800 transition">
-          <Plus className="w-4 h-4 mr-2" />
-           Explore
-        </button>
-      </div>
-
 
       {/* Events List */}
       <div className="rounded-lg shadow p-6 bg-white">
