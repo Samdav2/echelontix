@@ -41,7 +41,6 @@ const availableInterests = [
     { key: "Meet&Greet", name: "Meet & Greet", description: "An informal event where people can meet others.", icon: <Users /> }
 ];
 
-const data_id = localStorage.getItem('userData')
 interface UserData {
   userID: string
   name: string;
