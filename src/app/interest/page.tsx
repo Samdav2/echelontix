@@ -24,8 +24,10 @@ import {
   Utensils, // Icon for Food
   Users     // Icon for Meet & Greet
 } from "lucide-react";
+import { userAgent } from 'next/server';
 
 // --- Data & Type Definitions ---
+
 
 const availableInterests = [
     { key: "sports", name: "Sports", description: "Activities involving physical exertion and skill.", icon: <Dribbble /> },
@@ -39,9 +41,11 @@ const availableInterests = [
     { key: "Meet&Greet", name: "Meet & Greet", description: "An informal event where people can meet others.", icon: <Users /> }
 ];
 
+const data_id = localStorage.getItem('userData')
 interface UserData {
-  userID: string;
+  userID: string
   name: string;
+  user_id: string
 }
 
 interface EventData {
@@ -257,7 +261,7 @@ export default function EventSuggestionsPage() {
         if (!userData) return;
 
         // Get the user ID, checking for both possible keys
-        const userId = userData.user_id || userData.userID;
+        const userId = userData.user_id
         if (!userId) {
             setError("User ID not found.");
             return;
