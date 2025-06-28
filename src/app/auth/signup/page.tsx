@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/router'; // Corrected: Use 'next/router' for Pages Router
 import { Eye, EyeOff } from 'lucide-react';
 import axios from 'axios';
 
@@ -19,10 +19,7 @@ const Alert: React.FC<{ message: string; type: 'error' | 'success' }> = ({ messa
 // --- Main Sign-Up Page Component ---
 const SignUpPage: React.FC = () => {
   const router = useRouter();
-  const searchParams = useSearchParams();
-
   const [role, setRole] = useState<string | null>(null);
-  const [isClient, setIsClient] = useState(false); // State to prevent hydration errors
 
   // State for the entire form's data
   const [formData, setFormData] = useState({
@@ -37,38 +34,35 @@ const SignUpPage: React.FC = () => {
   });
 
   // State for UI control
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
 
-  // FIX: Added missing state declarations for password visibility
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  // This effect runs once on the client to safely access client-side info
+  // This effect safely reads the 'role' from the URL query after the router is ready on the client-side
   useEffect(() => {
-    setIsClient(true);
-    const roleFromUrl = searchParams.get('role');
-    if (roleFromUrl === 'admin') {
-      setRole('organizer');
-    } else if (roleFromUrl === 'user') {
-      setRole('attendee');
-    } else {
-      console.error("No valid role specified in URL.");
-      router.push('/choose-role');
+    // router.isReady ensures that the router.query object is populated
+    if (router.isReady) {
+        const { role: roleFromUrl } = router.query;
+        if (roleFromUrl === 'admin') {
+            setRole('organizer');
+        } else if (roleFromUrl === 'user') {
+            setRole('attendee');
+        } else {
+            console.error("No valid role specified in URL.");
+            router.push('/choose-role');
+        }
     }
-  }, [searchParams, router]);
+  }, [router.isReady, router.query, router]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  /**
-   * STEP 1: Sends user details to the backend to get a verification code.
-   */
   const handleInitialSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -77,16 +71,15 @@ const SignUpPage: React.FC = () => {
       setError("Passwords do not match.");
       return;
     }
-
     setIsLoading(true);
 
     const fullAccountData = {
-        username: `${formData.firstName} ${formData.lastName}`,
-        email: formData.email,
-        password: formData.password,
-        phoneNo: formData.phoneNo,
-        address: formData.address,
-        ...(role === 'organizer' && { brandName: formData.brandName }),
+      username: `${formData.firstName} ${formData.lastName}`,
+      email: formData.email,
+      password: formData.password,
+      phoneNo: formData.phoneNo,
+      address: formData.address,
+      ...(role === 'organizer' && { brandName: formData.brandName }),
     };
 
     try {
@@ -100,9 +93,6 @@ const SignUpPage: React.FC = () => {
     }
   };
 
-  /**
-   * STEP 2: Verifies the code and creates the profile.
-   */
   const handleVerificationAndProfileCreation = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -118,7 +108,7 @@ const SignUpPage: React.FC = () => {
       const userId = verifyResponse.data?.profile?.user_id;
 
       if (!userId) {
-          throw new Error("Verification succeeded, but user ID was not returned.");
+        throw new Error("Verification succeeded, but user ID was not returned.");
       }
 
       const profileUrl = role === 'organizer'
@@ -126,12 +116,12 @@ const SignUpPage: React.FC = () => {
         : process.env.NEXT_PUBLIC_USER_PROFILE!;
 
       const profilePayload = {
-          user_id: userId,
-          name: `${formData.firstName} ${formData.lastName}`,
-          email: formData.email,
-          phoneNo: formData.phoneNo,
-          address: formData.address,
-          ...(role === 'organizer' && { brandName: formData.brandName }),
+        user_id: userId,
+        name: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email,
+        phoneNo: formData.phoneNo,
+        address: formData.address,
+        ...(role === 'organizer' && { brandName: formData.brandName }),
       };
 
       await axios.post(profileUrl, profilePayload);
@@ -146,9 +136,9 @@ const SignUpPage: React.FC = () => {
     }
   };
 
-  // Return null on the server and during initial client render to prevent hydration errors
-  if (!isClient || !role) {
-    return null;
+  // Render a loading state until the role has been determined from the URL
+  if (!role) {
+    return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>;
   }
 
   return (
@@ -170,25 +160,25 @@ const SignUpPage: React.FC = () => {
 
           <form className="space-y-3" onSubmit={handleInitialSignUp}>
             <div className="flex gap-4">
-              <input type="text" name="firstName" placeholder="First Name" onChange={handleInputChange} className="w-full border border-black rounded-lg py-3 px-4 text-white placeholder-white-400 focus:outline-none" required />
-              <input type="text" name="lastName" placeholder="Last Name" onChange={handleInputChange} className="w-full border border-black rounded-lg py-3 px-4 text-white placeholder-white-400 focus:outline-none" required />
+              <input type="text" name="firstName" placeholder="First Name" onChange={handleInputChange} className="w-full border border-black rounded-lg py-3 px-4 text-black placeholder-gray-400 focus:outline-none" required />
+              <input type="text" name="lastName" placeholder="Last Name" onChange={handleInputChange} className="w-full border border-black rounded-lg py-3 px-4 text-black placeholder-gray-400 focus:outline-none" required />
             </div>
-            <input type="email" name="email" placeholder="Email" onChange={handleInputChange} className="w-full border border-black rounded-lg py-3 px-4 text-white placeholder-white-400 focus:outline-none" required />
-            <input type="text" name="phoneNo" placeholder="Phone Number" onChange={handleInputChange} className="w-full border border-black rounded-lg py-3 px-4 text-white placeholder-white-400 focus:outline-none" required />
-            <input type="text" name="address" placeholder="Address" onChange={handleInputChange} className="w-full border border-black rounded-lg py-3 px-4 text-white placeholder-white-400 focus:outline-none" required />
+            <input type="email" name="email" placeholder="Email" onChange={handleInputChange} className="w-full border border-black rounded-lg py-3 px-4 text-black placeholder-gray-400 focus:outline-none" required />
+            <input type="text" name="phoneNo" placeholder="Phone Number" onChange={handleInputChange} className="w-full border border-black rounded-lg py-3 px-4 text-black placeholder-gray-400 focus:outline-none" required />
+            <input type="text" name="address" placeholder="Address" onChange={handleInputChange} className="w-full border border-black rounded-lg py-3 px-4 text-black placeholder-gray-400 focus:outline-none" required />
 
             {role === 'organizer' && (
-              <input type="text" name="brandName" placeholder="Brand Name" onChange={handleInputChange} className="w-full border border-black rounded-lg py-3 px-4 text-white placeholder-white-400 focus:outline-none" required />
+              <input type="text" name="brandName" placeholder="Brand Name" onChange={handleInputChange} className="w-full border border-black rounded-lg py-3 px-4 text-black placeholder-gray-400 focus:outline-none" required />
             )}
 
             <div className="relative">
-              <input type={showPassword ? 'text' : 'password'} name="password" placeholder="Password" onChange={handleInputChange} className="w-full border border-black rounded-lg py-3 pl-4 pr-10 text-white" required />
+              <input type={showPassword ? 'text' : 'password'} name="password" placeholder="Password" onChange={handleInputChange} className="w-full border border-black rounded-lg py-3 pl-4 pr-10 text-black" required />
               <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3.5">
                 {showPassword ? <Eye className="w-5 h-5 text-gray-500" /> : <EyeOff className="w-5 h-5 text-gray-500" />}
               </button>
             </div>
             <div className="relative">
-              <input type={showConfirmPassword ? 'text' : 'password'} name="confirmPassword" placeholder="Confirm Password" onChange={handleInputChange} className="w-full border border-black rounded-lg py-3 pl-4 pr-10 text-white" required />
+              <input type={showConfirmPassword ? 'text' : 'password'} name="confirmPassword" placeholder="Confirm Password" onChange={handleInputChange} className="w-full border border-black rounded-lg py-3 pl-4 pr-10 text-black" required />
               <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-3.5">
                 {showConfirmPassword ? <Eye className="w-5 h-5 text-gray-500" /> : <EyeOff className="w-5 h-5 text-gray-500" />}
               </button>
@@ -224,6 +214,7 @@ const SignUpPage: React.FC = () => {
                         maxLength={6}
                         required
                     />
+                    {/* Corrected JSX syntax */}
                     {error && <div className="mt-4"><Alert message={error} type="error" /></div>}
                     <button type="submit" className="mt-6 w-full bg-black text-white font-semibold py-3 rounded-full hover:bg-gray-900 transition" disabled={isVerifying}>
                         {isVerifying ? 'Verifying...' : 'Verify & Complete Profile'}
@@ -239,4 +230,6 @@ const SignUpPage: React.FC = () => {
   );
 };
 
+
+// Main Page Component Wrapper - no longer needs Suspense for this specific fix
 export default SignUpPage;
