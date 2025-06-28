@@ -99,7 +99,7 @@ const EventCard = ({
         </div>
         <div className="flex justify-between items-center mt-auto pt-2 border-t border-gray-700">
           <span className="text-yellow-400 font-semibold text-lg">
-            {parseFloat(price) > 0 ? `$${price}` : 'Free'}
+            {parseFloat(price) > 0 ? `N${price}` : 'Free'}
           </span>
           <button
             className={`px-3 py-1.5 text-xs rounded transition-all duration-300 ${getButtonStyle()}`}
