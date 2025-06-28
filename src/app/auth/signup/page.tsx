@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router'; // Corrected: Use 'next/router' for Pages Router
+import React, { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 import axios from 'axios';
 
@@ -16,9 +16,11 @@ const Alert: React.FC<{ message: string; type: 'error' | 'success' }> = ({ messa
   return <div className={`${baseClasses} ${typeClasses}`} role="alert">{message}</div>;
 };
 
-// --- Main Sign-Up Page Component ---
-const SignUpPage: React.FC = () => {
+// --- Form Component that uses client-side hooks ---
+const SignUpFormComponent: React.FC = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [role, setRole] = useState<string | null>(null);
 
   // State for the entire form's data
@@ -42,21 +44,17 @@ const SignUpPage: React.FC = () => {
   const [verificationCode, setVerificationCode] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
 
-  // This effect safely reads the 'role' from the URL query after the router is ready on the client-side
   useEffect(() => {
-    // router.isReady ensures that the router.query object is populated
-    if (router.isReady) {
-        const { role: roleFromUrl } = router.query;
-        if (roleFromUrl === 'admin') {
-            setRole('organizer');
-        } else if (roleFromUrl === 'user') {
-            setRole('attendee');
-        } else {
-            console.error("No valid role specified in URL.");
-            router.push('/choose-role');
-        }
+    const roleFromUrl = searchParams.get('role');
+    if (roleFromUrl === 'admin') {
+      setRole('organizer');
+    } else if (roleFromUrl === 'user') {
+      setRole('attendee');
+    } else {
+      console.error("No valid role specified in URL.");
+      router.push('/choose-role');
     }
-  }, [router.isReady, router.query, router]);
+  }, [searchParams, router]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -136,9 +134,8 @@ const SignUpPage: React.FC = () => {
     }
   };
 
-  // Render a loading state until the role has been determined from the URL
   if (!role) {
-    return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>;
+    return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading role...</div>;
   }
 
   return (
@@ -214,7 +211,6 @@ const SignUpPage: React.FC = () => {
                         maxLength={6}
                         required
                     />
-                    {/* Corrected JSX syntax */}
                     {error && <div className="mt-4"><Alert message={error} type="error" /></div>}
                     <button type="submit" className="mt-6 w-full bg-black text-white font-semibold py-3 rounded-full hover:bg-gray-900 transition" disabled={isVerifying}>
                         {isVerifying ? 'Verifying...' : 'Verify & Complete Profile'}
@@ -231,5 +227,13 @@ const SignUpPage: React.FC = () => {
 };
 
 
-// Main Page Component Wrapper - no longer needs Suspense for this specific fix
+// Main Page Component Wrapper - This now wraps the form in a Suspense boundary.
+const SignUpPage: React.FC = () => {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center text-white">Loading Page...</div>}>
+            <SignUpFormComponent />
+        </Suspense>
+    );
+};
+
 export default SignUpPage;
