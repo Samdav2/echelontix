@@ -1,46 +1,299 @@
-"use client";
+'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, FormEvent, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import axios from 'axios';
+import { motion, AnimatePresence } from 'framer-motion';
+import { BrowserMultiFormatReader, NotFoundException } from '@zxing/library';
+import {
+  ScanLine,
+  Ticket,
+  CheckCircle,
+  XCircle,
+  Loader2,
+  User,
+  Calendar,
+  Info,
+  ShieldAlert,
+  CameraOff
+} from "lucide-react";
 
-const TicketValidation = () => {
-  const [ticketCode, setTicketCode] = useState("220403736");
+// --- Type Definitions ---
+interface EventDetails {
+    name?: string;
+    event_name: string;
+    event_address: string;
+    date: string;
+    ticketType?: string;
+    checkedInAt?: string;
+    brand_name: string;
+}
+
+interface ValidationResult {
+  status: 'valid' | 'invalid' | 'used' | 'unauthorized';
+  message: string;
+  details?: EventDetails;
+}
+
+// --- UI Sub-components ---
+
+const ResultDisplay = ({ result, onReset }: { result: ValidationResult; onReset: () => void }) => {
+  const isSuccess = result.status === 'valid';
+
+  const statusInfo = {
+    valid: { icon: <CheckCircle className="w-12 h-12 text-black" />, bgColor: 'bg-yellow-400', textColor: 'text-black', borderColor: 'border-yellow-400' },
+    used: { icon: <Info className="w-12 h-12 text-white" />, bgColor: 'bg-orange-500/20', textColor: 'text-white', borderColor: 'border-orange-500' },
+    invalid: { icon: <XCircle className="w-12 h-12 text-white" />, bgColor: 'bg-red-500/20', textColor: 'text-white', borderColor: 'border-red-500' },
+    unauthorized: { icon: <ShieldAlert className="w-12 h-12 text-white" />, bgColor: 'bg-red-500/20', textColor: 'text-white', borderColor: 'border-red-500' }
+  };
+
+  const currentStatus = statusInfo[result.status];
+
+  const cardVariants = {
+    hidden: { opacity: 0, scale: 0.8 },
+    visible: { opacity: 1, scale: 1, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
+    exit: { opacity: 0, scale: 0.8, transition: { duration: 0.3, ease: [0.6, -0.05, 0.73, 0.99] } }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="w-full max-w-md bg-white shadow-xl rounded-2xl p-6 sm:p-8 space-y-6">
-        <h2 className="text-2xl font-bold text-center text-gray-900">🎫 Ticket Validation</h2>
-
-        <input
-          type="text"
-          value={ticketCode}
-          disabled
-          className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-200 text-center font-mono text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-        />
-
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button className="w-full sm:w-auto px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-lg transition-all duration-200">
-            ✅ Validate & Date
-          </button>
-          <button className="w-full sm:w-auto px-6 py-3 bg-black hover:bg-gray-800 text-yellow-400 font-semibold rounded-lg transition-all duration-200">
-            📷 Scan QR Code
-          </button>
-        </div>
-
-        <div className="bg-gray-900 rounded-xl text-yellow-400 p-5 text-sm space-y-2 shadow-inner">
-          <p><strong>Status:</strong> Token Verified Successfully</p>
-          <p><strong>Attendee:</strong> Akanji Taiwo</p>
-          <p><strong>Email:</strong> akanjitaiwo2222@gmail.com</p>
-          <p><strong>Event:</strong> Lasu food festival</p>
-          <p><strong>Location:</strong> First Gate, off 23, lala</p>
-          <p><strong>Date:</strong> 1/31/2025</p>
-        </div>
-
-        <p className="text-center text-green-600 font-medium">
-          ✅ Ticket Code Verified & Deleted Successfully!
-        </p>
+    <motion.div
+      variants={cardVariants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      className={`relative text-center w-full max-w-md p-8 rounded-3xl border-2 shadow-2xl ${currentStatus.bgColor} ${currentStatus.borderColor}`}
+    >
+      <div className={`mx-auto w-24 h-24 rounded-full flex items-center justify-center mb-6 border-4 ${currentStatus.borderColor}`}>
+        {currentStatus.icon}
       </div>
-    </div>
+
+      <h2 className={`text-3xl font-bold mb-2 ${currentStatus.textColor}`}>{result.message}</h2>
+
+      {result.details && (
+        <div className="text-left bg-black/30 p-4 rounded-lg mt-6 space-y-3 text-white/80">
+          <p className="flex items-center gap-3"><Ticket className="w-5 h-5 text-yellow-300" /> <strong>{result.details.event_name || 'N/A'}</strong></p>
+          <p className="flex items-center gap-3"><User className="w-5 h-5 text-yellow-300" /> {result.details.name || 'N/A'}</p>
+          <p className="flex items-center gap-3"><Calendar className="w-5 h-5 text-yellow-300" /> {result.details.date}</p>
+          {result.details.checkedInAt && (
+            <p className="flex items-center gap-3"><Info className="w-5 h-5 text-orange-400" /> Already checked in at {result.details.checkedInAt}</p>
+          )}
+        </div>
+      )}
+
+      <button
+        onClick={onReset}
+        className="w-full mt-8 bg-black text-yellow-400 font-bold py-3 rounded-full hover:bg-gray-800 transition-all duration-300"
+      >
+        Scan Next Ticket
+      </button>
+    </motion.div>
   );
 };
 
-export default TicketValidation;
+
+// --- Main Page Component ---
+
+export default function TicketValidationPage() {
+  const [ticketCode, setTicketCode] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [currentUserBrand, setCurrentUserBrand] = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [isAutoSubmitting, setIsAutoSubmitting] = useState(false);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const codeReader = useRef(new BrowserMultiFormatReader());
+  const router = useRouter();
+
+  useEffect(() => {
+    const storedUserData = localStorage.getItem('userData');
+    if (storedUserData) {
+      const parsedData = JSON.parse(storedUserData);
+      if (parsedData && parsedData.brandname) {
+        setCurrentUserBrand(parsedData.brandname);
+      } else {
+        alert("You are not authorized to view this page.");
+        router.push('/dashboard/creator');
+      }
+    } else {
+      router.push('/auth/signin');
+    }
+  }, [router]);
+
+  const handleValidation = useCallback(async () => {
+    if (!ticketCode || isLoading) return;
+
+    setIsLoading(true);
+    setValidationResult(null);
+
+    try {
+      // Step 1: Verify the token and get event details
+      const verifyUrl = process.env.NEXT_PUBLIC_VERIFY_TOKEN!;
+      const verifyResponse = await axios.post(verifyUrl, { token: ticketCode });
+      const eventDetails: EventDetails = verifyResponse.data.eventDetails;
+      eventDetails.name = verifyResponse.data.userProfile.name
+
+      // Step 2: Perform authorization check
+      const authorizedBrands = ['Roman', 'Down'];
+      if (eventDetails.brand_name !== currentUserBrand && !authorizedBrands.includes(currentUserBrand || '')) {
+        setValidationResult({
+          status: 'unauthorized',
+          message: 'Authorization Failed',
+          details: eventDetails
+        });
+        return;
+      }
+
+      // Step 3: Check if ticket has already been used
+      if (verifyResponse.data.message === 'Token has already been used') {
+        setValidationResult({
+          status: 'used',
+          message: 'Ticket Already Used',
+          details: eventDetails
+        });
+        return;
+      }
+
+      // Step 4: If all checks pass, delete (check-in) the ticket
+      const deleteUrl = process.env.NEXT_PUBLIC_DELETE_TICKET!;
+      await axios.delete(deleteUrl, { data: { token: ticketCode } });
+
+      // Step 5: Show the final success message with details from the verification step
+      setValidationResult({
+        status: 'valid',
+        message: 'Ticket Validated!',
+        details: eventDetails,
+      });
+
+    } catch (err: any) {
+      setValidationResult({
+        status: 'invalid',
+        message: err.response?.data?.message || 'Invalid Ticket',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [ticketCode, isLoading, currentUserBrand, router]);
+
+  useEffect(() => {
+    if (isAutoSubmitting) {
+        handleValidation();
+        setIsAutoSubmitting(false);
+    }
+  }, [isAutoSubmitting, handleValidation]);
+
+  const startScanning = useCallback(() => {
+    setScanError(null);
+    codeReader.current.decodeFromVideoDevice(undefined, videoRef.current!, (result, err) => {
+      if (result) {
+        stopScanning();
+        setTicketCode(result.getText().toUpperCase());
+        setIsAutoSubmitting(true);
+      }
+      if (err && !(err instanceof NotFoundException)) {
+        console.error('QR Scan Error:', err);
+        setScanError("Could not start camera. Please check permissions.");
+        setIsScanning(false);
+      }
+    }).catch(err => {
+        console.error("Camera access error:", err);
+        setScanError("Camera access denied. Please allow camera permissions in your browser settings.");
+        setIsScanning(false);
+    });
+  }, []);
+
+  const stopScanning = useCallback(() => {
+    codeReader.current.reset();
+  }, []);
+
+  const handleScanButtonClick = () => {
+    if (isScanning) {
+        stopScanning();
+        setIsScanning(false);
+    } else {
+        setIsScanning(true);
+        startScanning();
+    }
+  }
+
+  useEffect(() => {
+      return () => stopScanning();
+  }, [stopScanning]);
+
+  const handleFormSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    handleValidation();
+  };
+
+  const resetScanner = () => {
+    setTicketCode('');
+    setValidationResult(null);
+    inputRef.current?.focus();
+  };
+
+  return (
+    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4">
+      <div className="absolute inset-0 bg-cover bg-center opacity-30" style={{backgroundImage: "url('/assets/ba.jpg')"}}></div>
+      <div className="relative w-full max-w-md text-center z-10">
+        <AnimatePresence mode="wait">
+          {!validationResult ? (
+            <motion.div
+              key="form"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="inline-block p-4 bg-yellow-400/10 rounded-full mb-6 border-2 border-yellow-400/20">
+                <Ticket className="w-10 h-10 text-yellow-400" />
+              </div>
+              <h1 className="text-4xl font-bold mb-2">Ticket Validator</h1>
+              <p className="text-gray-400 mb-8">Enter the ticket code or use the camera to scan.</p>
+
+              {isScanning && (
+                <div className="mb-4 rounded-lg overflow-hidden border-2 border-yellow-400">
+                    <video ref={videoRef} className="w-full h-auto" />
+                </div>
+              )}
+
+              {scanError && <p className="text-red-400 mb-4 text-sm">{scanError}</p>}
+
+              <form id="validation-form" onSubmit={handleFormSubmit} className="flex flex-col gap-4">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={ticketCode}
+                  onChange={(e) => setTicketCode(e.target.value.toUpperCase())}
+                  placeholder="ENTER TICKET CODE"
+                  className="w-full text-center text-2xl tracking-[0.2em] font-mono p-4 rounded-lg bg-black/30 border-2 border-white/20 focus:border-yellow-400 focus:ring-0 focus:outline-none transition"
+                  autoFocus
+                />
+                <div className="flex gap-4">
+                  <button
+                    type="submit"
+                    className="w-full flex-grow bg-yellow-400 text-black font-bold py-4 rounded-lg hover:scale-105 transform transition-transform duration-300 disabled:opacity-50 disabled:cursor-wait"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? <Loader2 className="animate-spin mx-auto" /> : 'Validate'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleScanButtonClick}
+                    className={`p-4 rounded-lg text-white transition-colors ${isScanning ? 'bg-red-500/80 hover:bg-red-500' : 'bg-white/10 hover:bg-white/20'}`}
+                    aria-label={isScanning ? "Stop Scanning" : "Scan QR Code"}
+                  >
+                    {isScanning ? <CameraOff/> : <ScanLine />}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          ) : (
+            <ResultDisplay key="result" result={validationResult} onReset={resetScanner} />
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}

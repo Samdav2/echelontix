@@ -131,7 +131,7 @@ type EventsByCategory = {
   [category: string]: EventCardProps[];
 };
 
-const predefinedCategories = ["Concert", "House Party", "Pool Party", "Club Party", "Beach Party"];
+const predefinedCategories = ["Concert", "Party"];
 
 const LandingPage = () => {
   const [activeCategory, setActiveCategory] = useState<string>("All");

@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@zxing/library": "^0.21.3",
     "axios": "^1.10.0",
     "framer-motion": "^12.18.1",
     "lucide-react": "^0.514.0",
