@@ -38,6 +38,7 @@ export default function RootLayout({
     pathname === "/registration" ||
     pathname === "/create-event" ||
     pathname === "/update-profile" ||
+    pathname === "/design" ||
     pathname.startsWith("/dashboard");
 
   return (

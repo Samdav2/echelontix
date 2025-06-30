@@ -24,10 +24,11 @@ const events: EventsByCategory = {
     { title: "UNLEASH 2.0", image: "/assets/love.svg", location: "Surulere", date: "2024-02-20" },
     { title: "HEARTBEAT & RHYTHM", image: "/assets/food.svg", location: "Mainland", date: "2024-01-10" },
   ],
-  "House Party": [],
+  "All": [],
+  "Block Party": [],
   "Beach Party": [],
   "Tech": [],
-  "Seminars Party": [],
+  "Seminars": [],
 };
 
 const categories = Object.keys(events);
