@@ -3,7 +3,7 @@
 import React, { useState, useRef, FormEvent, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { BrowserMultiFormatReader, NotFoundException } from '@zxing/library';
 import {
   ScanLine,
@@ -38,8 +38,6 @@ interface ValidationResult {
 // --- UI Sub-components ---
 
 const ResultDisplay = ({ result, onReset }: { result: ValidationResult; onReset: () => void }) => {
-  const isSuccess = result.status === 'valid';
-
   const statusInfo = {
     valid: { icon: <CheckCircle className="w-12 h-12 text-black" />, bgColor: 'bg-yellow-400', textColor: 'text-black', borderColor: 'border-yellow-400' },
     used: { icon: <Info className="w-12 h-12 text-white" />, bgColor: 'bg-orange-500/20', textColor: 'text-white', borderColor: 'border-orange-500' },
@@ -49,10 +47,10 @@ const ResultDisplay = ({ result, onReset }: { result: ValidationResult; onReset:
 
   const currentStatus = statusInfo[result.status];
 
-  const cardVariants = {
+  const cardVariants: Variants = {
     hidden: { opacity: 0, scale: 0.8 },
-    visible: { opacity: 1, scale: 1, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
-    exit: { opacity: 0, scale: 0.8, transition: { duration: 0.3, ease: [0.6, -0.05, 0.73, 0.99] } }
+    visible: { opacity: 1, scale: 1, transition: { duration: 0.4, ease: "easeOut" } },
+    exit: { opacity: 0, scale: 0.8, transition: { duration: 0.3, ease: "easeIn" } }
   };
 
   return (
@@ -73,7 +71,7 @@ const ResultDisplay = ({ result, onReset }: { result: ValidationResult; onReset:
         <div className="text-left bg-black/30 p-4 rounded-lg mt-6 space-y-3 text-white/80">
           <p className="flex items-center gap-3"><Ticket className="w-5 h-5 text-yellow-300" /> <strong>{result.details.event_name || 'N/A'}</strong></p>
           <p className="flex items-center gap-3"><User className="w-5 h-5 text-yellow-300" /> {result.details.name || 'N/A'}</p>
-          <p className="flex items-center gap-3"><Calendar className="w-5 h-5 text-yellow-300" /> {result.details.date}</p>
+          <p className="flex items-center gap-3"><Calendar className="w-5 h-5 text-yellow-300" /> {new Date(result.details.date).toLocaleDateString()}</p>
           {result.details.checkedInAt && (
             <p className="flex items-center gap-3"><Info className="w-5 h-5 text-orange-400" /> Already checked in at {result.details.checkedInAt}</p>
           )}
@@ -111,8 +109,9 @@ export default function TicketValidationPage() {
     const storedUserData = localStorage.getItem('userData');
     if (storedUserData) {
       const parsedData = JSON.parse(storedUserData);
-      if (parsedData && parsedData.brandname) {
-        setCurrentUserBrand(parsedData.brandname);
+      // Corrected: Check for profile.brandName to match login data structure
+      if (parsedData.profile && parsedData.profile.brandName) {
+        setCurrentUserBrand(parsedData.profile.brandName);
       } else {
         alert("You are not authorized to view this page.");
         router.push('/dashboard/creator');
@@ -132,8 +131,12 @@ export default function TicketValidationPage() {
       // Step 1: Verify the token and get event details
       const verifyUrl = process.env.NEXT_PUBLIC_VERIFY_TOKEN!;
       const verifyResponse = await axios.post(verifyUrl, { token: ticketCode });
+
       const eventDetails: EventDetails = verifyResponse.data.eventDetails;
-      eventDetails.name = verifyResponse.data.userProfile.name
+      // Add user profile name to the details object if it exists
+      if (verifyResponse.data.userProfile) {
+        eventDetails.name = verifyResponse.data.userProfile.name;
+      }
 
       // Step 2: Perform authorization check
       const authorizedBrands = ['Roman', 'Down'];
@@ -186,22 +189,25 @@ export default function TicketValidationPage() {
 
   const startScanning = useCallback(() => {
     setScanError(null);
-    codeReader.current.decodeFromVideoDevice(undefined, videoRef.current!, (result, err) => {
-      if (result) {
-        stopScanning();
-        setTicketCode(result.getText().toUpperCase());
-        setIsAutoSubmitting(true);
-      }
-      if (err && !(err instanceof NotFoundException)) {
-        console.error('QR Scan Error:', err);
-        setScanError("Could not start camera. Please check permissions.");
-        setIsScanning(false);
-      }
-    }).catch(err => {
-        console.error("Camera access error:", err);
-        setScanError("Camera access denied. Please allow camera permissions in your browser settings.");
-        setIsScanning(false);
-    });
+    if(videoRef.current) {
+        // Corrected: Pass null instead of undefined for the deviceId
+        codeReader.current.decodeFromVideoDevice(null, videoRef.current, (result, err) => {
+          if (result) {
+            stopScanning();
+            setTicketCode(result.getText().toUpperCase());
+            setIsAutoSubmitting(true);
+          }
+          if (err && !(err instanceof NotFoundException)) {
+            console.error('QR Scan Error:', err);
+            setScanError("Could not start camera. Please check permissions.");
+            setIsScanning(false);
+          }
+        }).catch(err => {
+            console.error("Camera access error:", err);
+            setScanError("Camera access denied. Please allow camera permissions in your browser settings.");
+            setIsScanning(false);
+        });
+    }
   }, []);
 
   const stopScanning = useCallback(() => {
