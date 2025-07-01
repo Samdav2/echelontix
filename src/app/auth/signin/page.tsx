@@ -54,7 +54,7 @@ const SignInPage: React.FC = () => {
       const user = { email, password };
       const loginUrl = process.env.NEXT_PUBLIC_API_URL;
 
-      const response = await axios.post(`${loginUrl}/auth/login`, user);
+      const response = await axios.post(`${loginUrl}auth/login`, user);
 
       if (response.data) {
         setSuccessMessage("Login Successful! Redirecting...");
