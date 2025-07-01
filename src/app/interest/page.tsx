@@ -269,7 +269,7 @@ export default function EventSuggestionsPage() {
         setIsLoading(true);
         setError(null);
         try {
-            const url = `${process.env.NEXT_PUBLIC_API_URL!}user/interests${userId}`;
+            const url = `${process.env.NEXT_PUBLIC_API_URL}user/interests${userId}`;
             const response = await axios.get(url);
 
             if (response.data && Array.isArray(response.data.events)) {

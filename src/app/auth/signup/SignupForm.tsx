@@ -106,7 +106,7 @@ const SignupForm: React.FC = () => {
       if (!userId) {
         throw new Error("Verification succeeded, but user ID was not returned.");
       }
-      const profileBaseUrl = process.env.NEXT_PUBLIC_API_URL!
+      const profileBaseUrl = process.env.NEXT_PUBLIC_API_URL
       const profileUrl = role === 'organizer'
         ? `${profileBaseUrl}profile/creatorProfiles`
         : `${profileBaseUrl}profile/userProfiles`;

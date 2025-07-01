@@ -144,7 +144,7 @@ const CreateEventPage: React.FC = () => {
         });
 
         try {
-            const createEventUrl = process.env.NEXT_PUBLIC_API_URL!;
+            const createEventUrl = process.env.NEXT_PUBLIC_API_URL;
             const response = await axios.post(`${createEventUrl}event/event`, formDataToSend, {
                 headers: { "Content-Type": "multipart/form-data" },
             });

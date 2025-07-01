@@ -129,7 +129,7 @@ export default function TicketValidationPage() {
 
     try {
       // Step 1: Verify the token and get event details
-      const verifyUrl = process.env.NEXT_PUBLIC_API_URL!;
+      const verifyUrl = process.env.NEXT_PUBLIC_API_URL;
       const verifyResponse = await axios.post(`${verifyUrl}event/verifytoken`, { token: ticketCode });
 
       const eventDetails: EventDetails = verifyResponse.data.eventDetails;
@@ -160,7 +160,7 @@ export default function TicketValidationPage() {
       }
 
       // Step 4: If all checks pass, delete (check-in) the ticket
-      const deleteUrl = process.env.NEXT_PUBLIC_API_URL!;
+      const deleteUrl = process.env.NEXT_PUBLIC_API_URL;
       await axios.delete(`${deleteUrl}event/deleteTicket`, { data: { token: ticketCode } });
 
       // Step 5: Show the final success message with details from the verification step

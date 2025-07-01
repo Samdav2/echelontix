@@ -112,7 +112,7 @@ export default function CreatorDashboard() {
     setIsEventsLoading(true);
     setError(null);
     try {
-      const brandEventUrl = process.env.NEXT_PUBLIC_API_URL!;
+      const brandEventUrl = process.env.NEXT_PUBLIC_API_URL;
       const encodedBrandName = encodeURIComponent(creatorData.brandname);
       const response = await axios.get(`${brandEventUrl}event/getEventCreated?brand=${encodedBrandName}`);
       setEvents(response.data && Array.isArray(response.data) ? response.data : []);
