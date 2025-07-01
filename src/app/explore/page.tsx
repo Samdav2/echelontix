@@ -176,8 +176,8 @@ const InterestSelection = () => {
       setIsLoading(true);
       setError(null);
       try {
-        const url = process.env.NEXT_PUBLIC_GET_ALL_EVENT!;
-        const response = await axios.get(url);
+        const url = process.env.NEXT_PUBLIC_API_URL!;
+        const response = await axios.get(`${url}event/getAllEvent`);
 
         const apiEvents: EventFromAPI[] = response.data.event;
         const apiCategories = new Set<string>();

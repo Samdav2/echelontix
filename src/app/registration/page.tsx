@@ -53,8 +53,8 @@ const EventForm: React.FC = () => {
       setIsLoading(true);
       setError(null);
       try {
-        const getEventUrl = process.env.NEXT_PUBLIC_GET_EVENT_DETAILS!;
-        const response = await axios.get(`${getEventUrl}${eventId}`);
+        const getEventUrl = process.env.NEXT_PUBLIC_API_URL!;
+        const response = await axios.get(`${getEventUrl}event/getEvent?${eventId}`);
         if (response.data?.event?.length > 0) {
           setEventDetails(response.data.event[0]);
         } else {

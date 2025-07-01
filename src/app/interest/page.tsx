@@ -149,8 +149,8 @@ const InterestModal = ({ isOpen, onClose, onSave }: { isOpen: boolean, onClose: 
                 throw new Error("User ID is missing from your session. Please log in again.");
             }
 
-            const url = process.env.NEXT_PUBLIC_ADD_USER_INTERESTS!;
-            await axios.post(url, {
+            const url = process.env.NEXT_PUBLIC_API_URL!;
+            await axios.post(`${url}user/interests`, {
                 user_id: userId,
                 interests: selectedInterests,
             });
@@ -269,7 +269,7 @@ export default function EventSuggestionsPage() {
         setIsLoading(true);
         setError(null);
         try {
-            const url = `${process.env.NEXT_PUBLIC_GET_USER_INTERESTED_EVENTS!}${userId}`;
+            const url = `${process.env.NEXT_PUBLIC_API_URL!}user/interests${userId}`;
             const response = await axios.get(url);
 
             if (response.data && Array.isArray(response.data.events)) {
