@@ -139,11 +139,13 @@ const LandingPage = () => {
   const [categories, setCategories] = useState<string[]>(["All", ...predefinedCategories]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const url = process.env.NEXT_PUBLIC_API_URL
+
+
   useEffect(() => {
     const fetchEvents = async () => {
       setIsLoading(true);
       try {
-        const url = process.env.NEXT_PUBLIC_API_URL
         const response = await axios.get(`${url}event/getAllEvent`);
 
         const apiEvents: EventFromAPI[] = response.data.event;

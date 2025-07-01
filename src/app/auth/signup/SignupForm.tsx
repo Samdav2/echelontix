@@ -79,7 +79,7 @@ const SignupForm: React.FC = () => {
     };
 
     try {
-      const signupUrl = process.env.NEXT_PUBLIC_API_URL!;
+      const signupUrl = process.env.NEXT_PUBLIC_API_URL;
       await axios.post(`${signupUrl}auth/signup`, fullAccountData);
       setShowVerificationModal(true);
     } catch (err: any) {
