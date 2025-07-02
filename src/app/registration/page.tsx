@@ -54,7 +54,7 @@ const EventForm: React.FC = () => {
       setError(null);
       try {
         const getEventUrl = process.env.NEXT_PUBLIC_API_URL;
-        const response = await axios.get(`${getEventUrl}event/getEvent?${eventId}`);
+        const response = await axios.get(`${getEventUrl}event/getEvent?${eventId}=`);
         if (response.data?.event?.length > 0) {
           setEventDetails(response.data.event[0]);
         } else {

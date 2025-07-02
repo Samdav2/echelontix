@@ -138,8 +138,7 @@ const LandingPage = () => {
   const [events, setEvents] = useState<EventsByCategory>({});
   const [categories, setCategories] = useState<string[]>(["All", ...predefinedCategories]);
   const [isLoading, setIsLoading] = useState(true);
-
-  const url = process.env.NEXT_PUBLIC_API_URL
+  const url = process.env.NEXT_PUBLIC_API_URL;
 
 
   useEffect(() => {
