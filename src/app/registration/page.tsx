@@ -27,7 +27,7 @@ interface FormData {
   gender: string;
   selectedTicket: string;
 }
-
+const getEventUrl = process.env.NEXT_PUBLIC_API_URL;
 const EventForm: React.FC = () => {
   const searchParams = useSearchParams();
   const [eventDetails, setEventDetails] = useState<EventDetails | null>(null);
@@ -46,7 +46,7 @@ const EventForm: React.FC = () => {
     if (!eventId) {
       setError("No event ID provided.");
       setIsLoading(false);
-      return;
+      return
     }
 
     const fetchEventDetails = async () => {
@@ -54,7 +54,7 @@ const EventForm: React.FC = () => {
       setError(null);
       try {
         const getEventUrl = process.env.NEXT_PUBLIC_API_URL;
-        const response = await axios.get(`${getEventUrl}event/getEvent?${eventId}=`);
+        const response = await axios.get(`${getEventUrl}event/getEvent?eventId=${eventId}`);
         if (response.data?.event?.length > 0) {
           setEventDetails(response.data.event[0]);
         } else {
