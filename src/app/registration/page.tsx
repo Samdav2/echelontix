@@ -56,6 +56,7 @@ const EventForm: React.FC = () => {
   const [generatedTicketData, setGeneratedTicketData] = useState<any>(null);
 
   // Effect to dynamically load the Paystack script
+  const url = process.env.NEXT_PUBLIC_API_URL
   useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://js.paystack.co/v1/inline.js";
@@ -78,7 +79,7 @@ const EventForm: React.FC = () => {
       setIsLoading(true);
       setError(null);
       try {
-        const getEventUrl = process.env.NEXT_PUBLIC_GET_EVENT_DETAILS!;
+        const getEventUrl = `${url}event/getEvent?eventId=`;
         const response = await axios.get(`${getEventUrl}${eventId}`);
         if (response.data?.event?.length > 0) {
           const details = response.data.event[0];
@@ -184,7 +185,7 @@ const EventForm: React.FC = () => {
 
       setGeneratedTicketData(ticketDataForPDF);
 
-      const attendUrl = process.env.NEXT_PUBLIC_ATTEND_EVENT!;
+      const attendUrl = `${url}event/attendevent`;
       await axios.post(attendUrl, {
           userId: userId, // Use the determined or generated user ID
           eventId: eventDetails!.id,

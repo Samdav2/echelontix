@@ -124,7 +124,7 @@ export default function CreatorDashboard() {
       setIsEventsLoading(false);
     }
   };
-
+  const url = process.env.NEXT_PUBLIC_API_URL;
   const handleDeleteEvent = async (eventId: string) => {
     // A more modern confirmation dialog could be implemented here
     if (!window.confirm("Are you sure you want to delete this event? This action cannot be undone.")) {
@@ -133,7 +133,7 @@ export default function CreatorDashboard() {
     const originalEvents = [...events];
     setEvents(events.filter(e => e.id !== eventId)); // Optimistic UI update
     try {
-      const deleteEventUrl = process.env.NEXT_PUBLIC_DELETE_EVENT!;
+      const deleteEventUrl = `${url}event/deleteEvent`;
       await axios.delete(deleteEventUrl, { data: { eventId } });
       // fetchEvents(); // Or just let the optimistic update stand
     } catch (err) {
