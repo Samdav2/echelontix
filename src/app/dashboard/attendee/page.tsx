@@ -1,230 +1,278 @@
 'use client';
 
-import { useEffect, useState } from "react";
-import { Calendar, Clock, MapPin, Ticket, TrendingUp, Users, Star, CheckCircle } from "lucide-react";
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import axios from 'axios';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Heart,
+  Calendar,
+  MapPin,
+  AlertCircle,
+  Compass,
+  Ticket,
+  TrendingUp,
+  CheckCircle
+} from "lucide-react";
 
-// Define the structure for the user data we expect from localStorage
-interface UserData {
+// --- Type Definitions ---
+interface UserProfile {
   name: string;
   email: string;
-  // Add any other user properties you expect, e.g., avatarUrl
+  user_id: string;
 }
 
-interface AttendedEvent {
+// This interface now correctly matches the API response for an event
+interface EventData {
   id: string;
-  title: string;
+  event_name: string;
   date: string;
-  location: string;
+  event_address: string;
   category: string;
-  rating?: number;
+  price: string;
+  picture?: string;
 }
 
-interface UpcomingEvent {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  location: string;
-  ticketType: string;
-  price: number;
-  category: string;
-}
+type EventStatus = 'live' | 'upcoming' | 'ended';
 
-// --- MOCK DATA (In a real app, this would be fetched from an API) ---
-const attendedEvents: AttendedEvent[] = [
-  { id: '1', title: 'Summer Music Festival', date: '2024-05-15', location: 'Central Park, NYC', category: 'Music', rating: 5 },
-  { id: '2', title: 'Tech Innovation Summit', date: '2024-04-20', location: 'Convention Center', category: 'Tech', rating: 4 },
-  { id: '3', title: 'Modern Art Exhibition', date: '2024-03-30', location: 'Metropolitan Museum', category: 'Art', rating: 5 }
-];
+// --- UI Sub-components ---
 
-const upcomingEvents: UpcomingEvent[] = [
-  { id: '4', title: 'Food & Wine Tasting', date: '2024-09-10', time: '07:00 PM', location: 'Rooftop Restaurant', ticketType: 'VIP', price: 120, category: 'Food' },
-  { id: '5', title: 'Basketball Championship', date: '2024-07-25', time: '08:00 PM', location: 'Sports Arena', ticketType: 'General', price: 85, category: 'Sports' }
-];
-// --- END MOCK DATA ---
+const StatCard = ({ title, value, icon, colorClass }: { title: string, value: string, icon: React.ReactNode, colorClass: string }) => (
+    <motion.div
+        variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+        className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-6 shadow-lg"
+    >
+        <div className="flex justify-between items-start">
+            <p className="text-sm font-medium text-gray-400">{title}</p>
+            <div className={`p-2 rounded-full bg-gray-800/50 ${colorClass}`}>{icon}</div>
+        </div>
+        <p className="text-4xl font-bold text-white mt-4">{value}</p>
+    </motion.div>
+);
 
+const EventCard = ({ event, status }: { event: EventData, status: EventStatus }) => {
+    const router = useRouter();
+    const handleEventClick = () => {
+        if (status !== 'ended') {
+            router.push(`/registration?eventId=${event.id}`);
+        }
+    };
+
+    const statusStyles = {
+        live: 'bg-red-500/20 text-red-400 border-red-500/30',
+        upcoming: 'bg-green-500/20 text-green-400 border-green-500/30',
+        ended: 'bg-gray-500/20 text-gray-400 border-gray-500/30'
+    };
+
+    return (
+        <motion.div
+            variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+            whileHover={{ y: -5, boxShadow: '0px 10px 30px rgba(0, 0, 0, 0.3)' }}
+            onClick={handleEventClick}
+            className={`rounded-2xl overflow-hidden bg-black/30 border border-white/10 shadow-lg group transition-all duration-300 flex flex-col ${status !== 'ended' ? 'cursor-pointer hover:border-white/30 hover:shadow-2xl' : 'opacity-60'}`}
+        >
+            <div className="relative w-full h-40">
+                <img src={event.picture ? `https://app.samdavweb.org.ng/${event.picture}` : 'https://placehold.co/400x300/1a1a1a/ffffff?text=Event'} alt={event.event_name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                 <div className={`absolute top-3 right-3 text-xs font-semibold px-3 py-1 rounded-full backdrop-blur-md border ${statusStyles[status]}`}>
+                    {status.charAt(0).toUpperCase() + status.slice(1)}
+                </div>
+            </div>
+            <div className="p-4 flex flex-col justify-between flex-grow">
+                <div>
+                    <p className="text-xs text-purple-400 font-semibold mb-1">{event.category}</p>
+                    <h3 className="font-bold text-white mb-2 truncate" title={event.event_name}>{event.event_name}</h3>
+                    <p className="text-sm text-gray-400 flex items-center gap-2 truncate" title={event.event_address}><MapPin className="w-4 h-4 text-gray-500 flex-shrink-0" /> {event.event_address}</p>
+                </div>
+                <div className="mt-3 pt-3 border-t border-white/10 flex justify-between items-center">
+                    <p className="text-lg font-bold text-white">{parseFloat(event.price) > 0 ? `₦${parseFloat(event.price).toLocaleString()}` : 'Free'}</p>
+                    <span className="text-sm text-gray-400 flex items-center gap-2"><Calendar className="w-4 h-4 text-gray-500" /> {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                </div>
+            </div>
+        </motion.div>
+    );
+};
+
+const SkeletonLoader = () => (
+    <div className="animate-pulse">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+            <div>
+                <div className="h-10 w-64 bg-gray-700/50 rounded-lg"></div>
+                <div className="h-4 w-48 bg-gray-700/50 rounded-lg mt-3"></div>
+            </div>
+            <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-gray-700/50"></div>
+                <div className="w-32 h-10 bg-gray-700/50 rounded-full"></div>
+            </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            {[...Array(4)].map((_, i) => <div key={i} className="h-36 bg-gray-700/50 rounded-2xl"></div>)}
+        </div>
+        <div>
+            <div className="h-8 w-48 bg-gray-700/50 rounded-lg mb-6"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(3)].map((_, i) => <div key={i} className="h-56 bg-gray-700/50 rounded-2xl"></div>)}
+            </div>
+        </div>
+    </div>
+);
+
+// --- Main Dashboard Component ---
 
 export default function AttendeeDashboard() {
-  // State to hold the user data retrieved from localStorage
-  const [userData, setUserData] = useState<UserData | null>(null);
+  const router = useRouter();
+  const [userData, setUserData] = useState<UserProfile | null>(null);
+  const [userInterests, setUserInterests] = useState<string[]>([]);
+  const [allEvents, setAllEvents] = useState<EventData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [upcomingEvents, setUpcomingEvents] = useState<EventData[]>([]);
+  const [attendedEvents, setAttendedEvents] = useState<EventData[]>([]);
 
-  // useEffect runs once when the component mounts to get data from localStorage
+
   useEffect(() => {
-    const storedUserData = localStorage.getItem('userData');
-    if (storedUserData) {
-      // Parse the stored string back into a JavaScript object
-      const parsedData = JSON.parse(storedUserData);
-      setUserData(parsedData);
+    const storedData = localStorage.getItem('userData');
+    if (storedData) {
+      try {
+        const parsedData = JSON.parse(storedData);
+        if (parsedData && parsedData.user_id) {
+          setUserData(parsedData);
+        } else {
+          router.push('/auth/signin');
+        }
+      } catch (e) {
+        router.push('/auth/signin');
+      }
+    } else {
+      router.push('/auth/signin');
     }
-  }, []); // The empty dependency array ensures this effect runs only once
+  }, [router]);
+  const url = process.env.NEXT_PUBLIC_API_URL
+  const fetchInitialData = useCallback(async () => {
+    if (!userData) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+        const interestsUrl = `${url}user/events/${userData.user_id}`;
+        const allEventsUrl = `${url}event/getAllEvent`;
 
+        // Fetch both user interests and all events at the same time
+        const [interestsResponse, eventsResponse] = await Promise.all([
+            axios.get(interestsUrl),
+            axios.get(allEventsUrl)
+        ]);
 
-  const getCategoryColor = (category: string) => {
-    const colors = {
-      'Music': 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-      'Tech': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-      'Art': 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
-      'Sports': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-      'Food': 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
-    };
-    return colors[category as keyof typeof colors] || 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+        // Safely parse interests, defaulting to an empty array
+        const interestsData = interestsResponse.data?.interests;
+        const interestsArray = interestsData ? JSON.parse(interestsData) : [];
+        setUserInterests(interestsArray);
+
+        const events = eventsResponse.data?.event || [];
+        setAllEvents(events);
+
+    } catch (err) {
+        console.error("Failed to fetch initial data:", err);
+        setError("Could not load your event data. Please try again later.");
+    } finally {
+        setIsLoading(false);
+    }
+  }, [userData]);
+
+  useEffect(() => {
+    if (userData) {
+      fetchInitialData();
+    }
+  }, [userData, fetchInitialData]);
+
+  const getEventStatus = (eventDate: string): EventStatus => {
+    const now = new Date();
+    const date = new Date(eventDate);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const eventDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+    if (eventDay < today) return 'ended';
+    if (eventDay.getTime() === today.getTime()) return 'live';
+    return 'upcoming';
   };
 
-  const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <Star
-        key={i}
-        className={`w-4 h-4 ${
-          i < rating
-            ? 'fill-yellow-400 text-yellow-400'
-            : 'text-gray-300 dark:text-gray-600'
-        }`}
-      />
-    ));
-  };
+  // This logic now filters all events based on the user's interests
+  const {} = useMemo(() => {
+    // if (!userInterests.length) {
+    //     return { upcomingEvents: [], attendedEvents: [] };
+    // }
 
-  // Display a loading message while user data is being fetched from localStorage
-  if (!userData) {
+    const upcoming = allEvents.filter(e => getEventStatus(e.date) !== 'ended').slice(0, 5);
+    const attended = allEvents.filter(e => getEventStatus(e.date) === 'ended').slice(0, 5);
+    setUpcomingEvents(upcoming)
+    setAttendedEvents(attended)
+    return { upcoming, attended };
+  }, [allEvents, userInterests]);
+
+  if (isLoading || !userData) {
     return (
-      <div className="p-6 text-center">
-        <p>Loading Dashboard...</p>
-      </div>
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white p-8">
+            <SkeletonLoader />
+        </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">My Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Welcome back, {userData.name}!</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-300">
-            <img
-              src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
-              alt="Avatar"
-              className="w-full h-full object-cover"
-            />
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
           <div>
-            {/* Display the user's name and email dynamically */}
-            <div className="font-semibold text-foreground">{userData.name}</div>
-            <div className="text-sm text-muted-foreground">{userData.email}</div>
+            <h1 className="text-4xl font-bold">My Dashboard</h1>
+            <p className="text-gray-400 mt-1">Welcome back, {userData.name}!</p>
           </div>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="rounded-lg shadow-lg p-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Events Attended</p>
-              <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">{attendedEvents.length}</p>
+          <div className="flex items-center gap-4">
+            <button onClick={() => router.push('/interest')} className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full font-semibold hover:bg-white/20 transition-colors">
+                <Heart className="w-4 h-4 text-purple-400"/> My Interests
+            </button>
+            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-purple-500/50">
+              <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face" alt="Avatar" className="w-full h-full object-cover" />
             </div>
-            <CheckCircle className="w-8 h-8 text-blue-600 dark:text-blue-400" />
           </div>
+        </motion.div>
+
+        {/* Stats */}
+        <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12" variants={{ visible: { transition: { staggerChildren: 0.1 } } }} initial="hidden" animate="visible">
+          <StatCard title="Events Attended" value={attendedEvents.length.toString()} icon={<CheckCircle />} colorClass="text-blue-400" />
+          <StatCard title="Upcoming For You" value={upcomingEvents.length.toString()} icon={<Calendar />} colorClass="text-green-400" />
+          <StatCard title="Favorite Category" value={userInterests[0] || 'N/A'} icon={<TrendingUp />} colorClass="text-purple-400" />
+          <StatCard title="Tickets" value="View All" icon={<Ticket />} colorClass="text-orange-400" />
+        </motion.div>
+
+        {error && <div className="text-center py-4 my-4 bg-red-500/20 text-red-300 rounded-lg flex items-center justify-center gap-2"><AlertCircle/> {error}</div>}
+
+        {/* Upcoming Events */}
+        <div className="mb-12">
+          <h2 className="text-2xl font-semibold text-white mb-6">Upcoming For You</h2>
+          {upcomingEvents.length > 0 ? (
+            <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" variants={{ visible: { transition: { staggerChildren: 0.1 } } }} initial="hidden" animate="visible">
+              {upcomingEvents.map((event) => <EventCard key={event.id} event={event} status={getEventStatus(event.date)} />)}
+            </motion.div>
+          ) : (
+            <div className="text-center py-16 bg-black/20 border border-white/10 rounded-2xl">
+                <Compass className="w-12 h-12 mx-auto text-gray-500 mb-4"/>
+                <h3 className="text-xl font-semibold">No upcoming events match your interests.</h3>
+                <p className="text-gray-400 mt-2">Why not explore what's out there?</p>
+                <button onClick={() => router.push('/explore')} className="mt-4 bg-purple-600 px-5 py-2 rounded-full font-semibold hover:bg-purple-700 transition-colors">Explore Events</button>
+            </div>
+          )}
         </div>
 
-        <div className="rounded-lg shadow-lg p-6 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-green-600 dark:text-green-400">Upcoming Events</p>
-              <p className="text-3xl font-bold text-green-700 dark:text-green-300">{upcomingEvents.length}</p>
-            </div>
-            <Calendar className="w-8 h-8 text-green-600 dark:text-green-400" />
-          </div>
-        </div>
-
-        <div className="rounded-lg shadow-lg p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Favorite Category</p>
-              <p className="text-xl font-bold text-purple-700 dark:text-purple-300">Music</p>
-            </div>
-            <TrendingUp className="w-8 h-8 text-purple-600 dark:text-purple-400" />
-          </div>
-        </div>
-
-        <div className="rounded-lg shadow-lg p-6 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-orange-600 dark:text-orange-400">Total Spent</p>
-              <p className="text-3xl font-bold text-orange-700 dark:text-orange-300">$485</p>
-            </div>
-            <Ticket className="w-8 h-8 text-orange-600 dark:text-orange-400" />
-          </div>
-        </div>
-      </div>
-
-      {/* Upcoming Events */}
-      <div>
-        <h2 className="text-2xl font-semibold text-foreground mb-4">Upcoming Events</h2>
-        <div className="space-y-4">
-          {upcomingEvents.map((event) => (
-            <div key={event.id} className="rounded-lg shadow-lg p-6 bg-white dark:bg-zinc-900 hover:shadow-xl transition-all duration-300">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex-1 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-lg font-semibold text-foreground">{event.title}</h3>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${getCategoryColor(event.category)}`}>
-                      {event.category}
-                    </span>
-                    <span className="px-2 py-1 rounded text-xs font-medium bg-primary/10 text-primary border border-primary/20">
-                      {event.ticketType}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2"><Calendar className="w-4 h-4" /><span>{new Date(event.date).toLocaleDateString()}</span></div>
-                    <div className="flex items-center gap-2"><Clock className="w-4 h-4" /><span>{event.time}</span></div>
-                    <div className="flex items-center gap-2"><MapPin className="w-4 h-4" /><span>{event.location}</span></div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-foreground">${event.price}</div>
-                    <div className="text-sm text-muted-foreground">Paid</div>
-                  </div>
-                  <button className="px-4 py-2 border rounded hover:bg-primary hover:text-white transition">View Ticket</button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Event History */}
-      <div>
-        <h2 className="text-2xl font-semibold text-foreground mb-4">Event History</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {attendedEvents.map((event) => (
-            <div key={event.id} className="rounded-lg shadow-lg p-6 bg-white dark:bg-zinc-900 hover:shadow-xl transition-all duration-300">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${getCategoryColor(event.category)}`}>
-                    {event.category}
-                  </span>
-                  <div className="flex items-center gap-1">{event.rating && renderStars(event.rating)}</div>
-                </div>
-                <h3 className="text-lg font-semibold text-foreground">{event.title}</h3>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2"><Calendar className="w-4 h-4" /><span>{new Date(event.date).toLocaleDateString()}</span></div>
-                  <div className="flex items-center gap-2"><MapPin className="w-4 h-4" /><span>{event.location}</span></div>
-                </div>
-                <div className="flex items-center justify-between pt-3">
-                  <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                    <CheckCircle className="w-4 h-4" />
-                    <span className="text-sm font-medium">Attended</span>
-                  </div>
-                  <button className="text-sm text-primary hover:text-white hover:bg-primary px-3 py-1 rounded">Review</button>
-                </div>
-              </div>
-            </div>
-          ))}
+        {/* Event History */}
+        <div>
+          <h2 className="text-2xl font-semibold text-white mb-6">Your Event History</h2>
+          {attendedEvents.length > 0 ? (
+             <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" variants={{ visible: { transition: { staggerChildren: 0.1 } } }} initial="hidden" animate="visible">
+                {attendedEvents.map((event) => <EventCard key={event.id} event={event} status={getEventStatus(event.date)} />)}
+            </motion.div>
+          ) : (
+            <p className="text-center text-gray-500 py-10">Your event history is empty.</p>
+          )}
         </div>
       </div>
     </div>
   );
-};
+}
