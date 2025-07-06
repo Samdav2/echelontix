@@ -233,8 +233,8 @@ const EventForm: React.FC = () => {
     const options = [];
     if (parseFloat(eventDetails.price) >= 0) options.push({ label: `1 Headset - ₦${eventDetails.price}`, value: `regular-${eventDetails.price}` });
     if (parseFloat(eventDetails.vip_price) > 0) options.push({ label: `2 Headset - ₦${eventDetails.vip_price}`, value: `vip-${eventDetails.vip_price}` });
-    if (parseFloat(eventDetails.vvip_price) > 0) options.push({ label: `3 Headset - ₦${eventDetails.vvip_price}`, value: `vvip-${eventDetails.vvip_price}` });
-    if (parseFloat(eventDetails.vvvip_price) > 0) options.push({ label: `VVVIP - ₦${eventDetails.vvvip_price}`, value: `vvvip-${eventDetails.vvvip_price}` });
+    if (parseFloat(eventDetails.vvip_price) > 0) options.push({ label: `Table For 3 - ₦${eventDetails.vvip_price}`, value: `vvip-${eventDetails.vvip_price}` });
+    if (parseFloat(eventDetails.vvvip_price) > 0) options.push({ label: `Table For 6 - ₦${eventDetails.vvvip_price}`, value: `vvvip-${eventDetails.vvvip_price}` });
     if (parseFloat(eventDetails.table_price) > 0) options.push({ label: `Table - ₦${eventDetails.table_price}`, value: `table-${eventDetails.table_price}` });
     return options;
   };
