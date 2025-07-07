@@ -110,8 +110,8 @@ export default function TicketValidationPage() {
     if (storedUserData) {
       const parsedData = JSON.parse(storedUserData);
       // Corrected: Check for profile.brandName to match login data structure
-      if (parsedData.profile && parsedData.profile.brandName) {
-        setCurrentUserBrand(parsedData.profile.brandName);
+      if (parsedData && parsedData.brandname) {
+        setCurrentUserBrand(parsedData.brandname);
       } else {
         alert("You are not authorized to view this page.");
         router.push('/dashboard/creator');

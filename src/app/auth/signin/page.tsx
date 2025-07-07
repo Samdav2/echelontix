@@ -152,14 +152,16 @@ const SignInPage: React.FC = () => {
         {/* Divider */}
         <div className="flex items-center my-6">
           <div className="flex-grow border-t border-gray-400" />
-          <span className="px-2 text-sm text-blue-400">Forgotten Password?</span>
+          <span className="px-2 text-sm text-blue-400">
+            <a href="/reset-pass" className="text-blue-400 font-semibold underline">Forgot Password?</a>
+          </span>
           <div className="flex-grow border-t border-gray-400" />
         </div>
 
         {/* Footer */}
         <p className="text-sm text-white mt-6 text-center">
           Don't have an account?{' '}
-          <a href="/signUp" className="text-blue-400 font-semibold underline">Sign Up</a>
+          <a href="/choose-role" className="text-blue-400 font-semibold underline">Sign Up</a>
         </p>
       </div>
     </div>

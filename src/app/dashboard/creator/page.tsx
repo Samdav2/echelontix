@@ -165,6 +165,8 @@ export default function CreatorDashboard() {
   };
 
   const handleCreateEventClick = () => router.push('/create-event');
+  const handleVerifyEventClick = () => router.push('/ticket-validation');
+  const handleExploreEventClick = () => router.push('/explore');
 
   // Directly calculate stats on each render.
   // useMemo is removed to resolve a potential build tool parsing issue.
@@ -191,17 +193,26 @@ export default function CreatorDashboard() {
           transition={{ duration: 0.5 }}
           className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10"
         >
-          <div>
-            <h1 className="text-4xl font-bold">Creator Dashboard</h1>
-            <p className="text-gray-400 mt-1">Welcome back, {creatorData.name}!</p>
-          </div>
-          <button
-            onClick={handleCreateEventClick}
-            className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-full shadow-lg hover:scale-105 transform transition-all duration-300 font-semibold"
-          >
-            <Plus className="w-5 h-5" />
-            Create New Event
-          </button>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+    <h1 className="text-4xl font-bold">Creator Dashboard</h1>
+    <p className="text-gray-400 mt-1">Welcome back, {creatorData.name}!</p>
+  </div>
+  <div className="flex flex-col sm:flex-row gap-4">
+      <button
+      onClick={handleCreateEventClick}
+      className="flex items-center justify-center w-full sm:w-auto gap-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-full shadow-lg hover:scale-105 transform transition-all duration-300 font-semibold"
+      >
+      <Plus className="w-5 h-5" />
+      Create New Event
+      </button>
+      <button
+      onClick={handleVerifyEventClick}
+      className="flex items-center justify-center w-full sm:w-auto bg-gradient-to-r from-yellow-600 to-yellow-500 text-white px-6 py-3 rounded-full shadow-lg hover:scale-105 transform transition-all duration-300 font-semibold"
+      >
+      Verify Ticket
+      </button>
+  </div>
+
         </motion.div>
 
         {/* Stats Grid */}
@@ -295,6 +306,15 @@ export default function CreatorDashboard() {
             </div>
           )}
         </div>
-      </div>
+            <div className="fixed bottom-0 left-0 w-full p-4 flex justify-center mb-10">
+              <button
+                onClick={handleExploreEventClick}
+                className="bg-gradient-to-r from-green-400 to-blue-500 text-white px-8 py-3 rounded-full shadow-lg hover:bg-gradient-to-l transform hover:scale-105 transition-all duration-300 font-semibold"
+              >
+              🧭 Explore
+              </button>
+            </div>
+        </div>
+
   );
 }

@@ -1,13 +1,22 @@
 'use client';
 
 import React, { useEffect, useState, Suspense } from "react";
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import axios from 'axios';
 import { jsPDF } from "jspdf";
 import { motion, AnimatePresence } from 'framer-motion';
 import { Ticket, Download, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 
 // --- Type Definitions ---
+// Represents a single table from the API
+interface Table {
+  id: number;
+  name: string;
+  capacity: number;
+  price: string;
+}
+
+// Updated to match the 'events' object from the API
 interface EventDetails {
   id: number;
   event_name: string;
@@ -20,11 +29,17 @@ interface EventDetails {
   vip_price: string;
   vvip_price: string;
   vvvip_price: string;
-  table_price: string;
   account_name: string;
   account_number: string;
   bank: string;
 }
+
+// Represents the entire API response
+interface EventApiResponse {
+    events: EventDetails;
+    table: Table[];
+}
+
 
 interface FormData {
   firstName: string;
@@ -41,6 +56,7 @@ interface FormData {
 const EventForm: React.FC = () => {
   const searchParams = useSearchParams();
   const [eventDetails, setEventDetails] = useState<EventDetails | null>(null);
+  const [tables, setTables] = useState<Table[]>([]); // State to hold table data
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -50,13 +66,13 @@ const EventForm: React.FC = () => {
     gender: '',
     selectedTicket: { type: 'regular', price: 0 },
   });
-
+   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
   const [ticketGenerated, setTicketGenerated] = useState(false);
   const [generatedTicketData, setGeneratedTicketData] = useState<any>(null);
 
-  // Effect to dynamically load the Paystack script
-  const url = process.env.NEXT_PUBLIC_API_URL
+  const url = process.env.NEXT_PUBLIC_API_URL;
+
   useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://js.paystack.co/v1/inline.js";
@@ -80,23 +96,30 @@ const EventForm: React.FC = () => {
       setError(null);
       try {
         const getEventUrl = `${url}event/getEvent?eventId=`;
-        const response = await axios.get(`${getEventUrl}${eventId}`);
-        if (response.data?.event?.length > 0) {
-          const details = response.data.event[0];
+        // The response is now expected to be an object with 'events' and 'table' properties
+        const response = await axios.get<EventApiResponse>(`${getEventUrl}${eventId}`);
+
+        if (response.data && response.data.events) {
+          const details = response.data.events;
+          const tableData = response.data.table || [];
+
           setEventDetails(details);
-          // Set default ticket price
+          setTables(tableData);
+
+          // Set default ticket price from the main event price
           setFormData(prev => ({ ...prev, selectedTicket: { type: 'regular', price: parseFloat(details.price) || 0 } }));
         } else {
-          throw new Error("Event not found.");
+          throw new Error("Event data is not in the expected format.");
         }
       } catch (err) {
-        setError("Could not load event details.");
+        setError("Could not load event details. Please check the event ID and try again.");
+        console.error(err);
       } finally {
         setIsLoading(false);
       }
     };
     fetchEventDetails();
-  }, [searchParams]);
+  }, [searchParams, url]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -124,7 +147,8 @@ const EventForm: React.FC = () => {
     const colors = {
       REGULAR: '#6366F1', VIP: '#D97706', VVIP: '#7E22CE', TABLE: '#DC2626', DEFAULT: '#4B5563'
     };
-    const ticketColor = colors[ticketType as keyof typeof colors] || colors.DEFAULT;
+    // Use a generic color for tables unless specific names are matched
+    const ticketColor = colors[ticketType as keyof typeof colors] || colors.TABLE;
 
     doc.addImage(ticketData.eventImage, 'JPEG', 0, 0, 400, 200);
     doc.setFillColor(0, 0, 0, 0.6);
@@ -157,21 +181,15 @@ const EventForm: React.FC = () => {
   const handlePaymentSuccess = async () => {
     setIsProcessing(true);
     try {
-      // --- User ID Logic ---
       let userId;
       const storedUserData = localStorage.getItem('userData');
       if (storedUserData) {
           const parsedData = JSON.parse(storedUserData);
-          // Check for various possible keys where user ID might be stored
           userId = parsedData.userID || parsedData.user_id || parsedData.profile?.user_id;
       }
-
-      // If no user ID was found (user is not logged in), generate a unique one
       if (!userId) {
           userId = crypto.randomUUID();
-          console.log("No logged-in user found. Generated temporary ID:", userId);
       }
-      // --- End User ID Logic ---
 
       const fullName = `${formData.firstName} ${formData.lastName}`;
       const token = generateTicketToken(fullName, eventDetails!.event_name);
@@ -187,7 +205,7 @@ const EventForm: React.FC = () => {
 
       const attendUrl = `${url}event/attendevent`;
       await axios.post(attendUrl, {
-          userId: userId, // Use the determined or generated user ID
+          userId: userId,
           eventId: eventDetails!.id,
           email: formData.email,
           token: token,
@@ -215,33 +233,47 @@ const EventForm: React.FC = () => {
     const handler = window.PaystackPop.setup({
       key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
       email: formData.email,
-      amount: formData.selectedTicket.price * 100, // Amount in Kobo
-      ref: (new Date()).getTime().toString(), // Unique reference
+      amount: formData.selectedTicket.price * 100,
+      ref: (new Date()).getTime().toString(),
       onClose: () => {
-        setError("Payment was cancelled.");
+        // setError("Payment was cancelled."); // Optional: show message on close
       },
-      callback: (response: any) => {
-        // This callback is called after a successful transaction
+      callback: () => {
         handlePaymentSuccess();
       },
     });
     handler.openIframe();
   };
 
+  // This function now dynamically generates all ticket options
   const getTicketOptions = () => {
     if (!eventDetails) return [];
+
     const options = [];
+
+    // Standard tickets
     if (parseFloat(eventDetails.price) >= 0) options.push({ label: `1 Headset - ₦${eventDetails.price}`, value: `regular-${eventDetails.price}` });
     if (parseFloat(eventDetails.vip_price) > 0) options.push({ label: `2 Headset - ₦${eventDetails.vip_price}`, value: `vip-${eventDetails.vip_price}` });
-    if (parseFloat(eventDetails.vvip_price) > 0) options.push({ label: `Table For 3 - ₦${eventDetails.vvip_price}`, value: `vvip-${eventDetails.vvip_price}` });
-    if (parseFloat(eventDetails.vvvip_price) > 0) options.push({ label: `Table For 6 - ₦${eventDetails.vvvip_price}`, value: `vvvip-${eventDetails.vvvip_price}` });
-    if (parseFloat(eventDetails.table_price) > 0) options.push({ label: `Table - ₦${eventDetails.table_price}`, value: `table-${eventDetails.table_price}` });
+    if (parseFloat(eventDetails.vvip_price) > 0) options.push({ label: `VVIP - ₦${eventDetails.vvip_price}`, value: `vvip-${eventDetails.vvip_price}` });
+    if (parseFloat(eventDetails.vvvip_price) > 0) options.push({ label: `VVVIP - ₦${eventDetails.vvvip_price}`, value: `vvvip-${eventDetails.vvvip_price}` });
+
+    // Dynamic tables from the API
+    if (tables.length > 0) {
+        tables.forEach(table => {
+            options.push({
+                label: `${table.name} (Capacity: ${table.capacity}) - ₦${table.price}`,
+                // Use table name as type for simplicity
+                value: `${table.name.replace(/\s+/g, '_')}-${table.price}`
+            });
+        });
+    }
+
     return options;
   };
 
   if (isLoading) return <div className="min-h-screen bg-black flex items-center justify-center text-white"><Loader2 className="animate-spin" /> Loading Event...</div>;
   if (error) return <div className="min-h-screen bg-black flex items-center justify-center text-red-500"><AlertCircle className="mr-2"/>{error}</div>;
-  if (!eventDetails) return null;
+  if (!eventDetails) return <div className="min-h-screen bg-black flex items-center justify-center text-white">Event not found.</div>;
 
   const formattedDate = {
     day: new Date(eventDetails.date).getDate(),
