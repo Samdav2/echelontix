@@ -12,7 +12,8 @@ import {
   Compass,
   Ticket,
   TrendingUp,
-  CheckCircle
+  CheckCircle,
+  UserCog
 } from "lucide-react";
 
 // --- Type Definitions ---
@@ -224,13 +225,24 @@ export default function AttendeeDashboard() {
             <h1 className="text-4xl font-bold">My Dashboard</h1>
             <p className="text-gray-400 mt-1">Welcome back, {userData.name}!</p>
           </div>
-          <div className="flex items-center gap-4">
-            <button onClick={() => router.push('/interest')} className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full font-semibold hover:bg-white/20 transition-colors">
-                <Heart className="w-4 h-4 text-purple-400"/> My Interests
-            </button>
-            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-purple-500/50">
-              <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face" alt="Avatar" className="w-full h-full object-cover" />
-            </div>
+          <div className="flex items-center gap-3">
+                <button onClick={() => router.push('/interest')} className="flex items-center gap-2 bg-purple-500/10 text-purple-300 px-4 py-2 rounded-full font-semibold hover:bg-purple-500/20 hover:text-white transition-colors">
+                    <Heart className="w-4 h-4"/> My Interests
+                </button>
+                <button onClick={() => router.push('/update')} className="flex items-center gap-2 bg-yellow-500/70 text-white-300 px-4 py-2 rounded-full font-semibold hover:bg-yellow-500/85 hover:text-white transition-colors">
+                    <UserCog className="w-4 h-4"/> Edit Profile
+                </button>
+                <button onClick={() => router.push('/explore')} className="flex items-center gap-2 bg-green-500/10 text-green-300 px-4 py-2 rounded-full font-semibold hover:bg-green-500/20 hover:text-white transition-colors">
+                    <Compass className="w-4 h-4"/> Explore
+                </button>
+
+                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-purple-500/50">
+                  <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-purple-500/50">
+                 <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face" alt="Avatar" className="w-full h-full object-cover" />
+                </div>
+                </div>
+                </div>
           </div>
         </motion.div>
 
