@@ -61,7 +61,7 @@ const EventCard = ({
 
   return (
     <div
-      className={`bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300 cursor-pointer relative ${
+      className={`bg-gray-800/50 backdrop-blur-sm border border-white-700 rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300 cursor-pointer relative ${
         status === 'past' ? 'opacity-70' : ''
       }`}
     >
