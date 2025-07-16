@@ -79,8 +79,8 @@ const SignupForm: React.FC = () => {
     };
 
     try {
-      const signupUrl = process.env.NEXT_PUBLIC_USER_SIGNUP!;
-      await axios.post(signupUrl, fullAccountData);
+      const signupUrl = process.env.NEXT_PUBLIC_API_URL;
+      await axios.post(`${signupUrl}auth/signup`, fullAccountData);
       setShowVerificationModal(true);
     } catch (err: any) {
       setError(err.response?.data?.message || "An error occurred during sign-up.");
@@ -95,8 +95,8 @@ const SignupForm: React.FC = () => {
     setIsVerifying(true);
 
     try {
-      const verifyUrl = process.env.NEXT_PUBLIC_VERIFY_CODE!;
-      const verifyResponse = await axios.post(verifyUrl, {
+      const verifyUrl = process.env.NEXT_PUBLIC_API_URL!;
+      const verifyResponse = await axios.post(`${verifyUrl}auth/verify`, {
         email: formData.email,
         code: verificationCode,
       });
@@ -106,10 +106,10 @@ const SignupForm: React.FC = () => {
       if (!userId) {
         throw new Error("Verification succeeded, but user ID was not returned.");
       }
-
+      const profileBaseUrl = process.env.NEXT_PUBLIC_API_URL
       const profileUrl = role === 'organizer'
-        ? process.env.NEXT_PUBLIC_CREATOR_PROFILE!
-        : process.env.NEXT_PUBLIC_USER_PROFILE!;
+        ? `${profileBaseUrl}profile/creatorProfiles`
+        : `${profileBaseUrl}profile/userProfiles`;
 
       const profilePayload = {
         user_id: userId,
