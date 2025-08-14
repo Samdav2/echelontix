@@ -73,7 +73,7 @@ const EventForm: React.FC = () => {
   const [ticketGenerated, setTicketGenerated] = useState(false);
   const [generatedTicketData, setGeneratedTicketData] = useState<any>(null);
 
-  const url = process.env.NEXT_PUBLIC_API_URL;
+
 
   useEffect(() => {
     const script = document.createElement("script");
@@ -96,8 +96,10 @@ const EventForm: React.FC = () => {
     const fetchEventDetails = async () => {
       setIsLoading(true);
       setError(null);
+        const api_url = process.env.NEXT_PUBLIC_API_URL;
+        console.log("Testing API", url)
       try {
-        const getEventUrl = `${url}event/getEvent?eventId=`;
+        const getEventUrl = `${api_url}event/getEvent?eventId=`;
         // The response is now expected to be an object with 'events' and 'table' properties
         const response = await axios.get<EventApiResponse>(`${getEventUrl}${eventId}`);
 
@@ -121,7 +123,7 @@ const EventForm: React.FC = () => {
       }
     };
     fetchEventDetails();
-  }, [searchParams, url]);
+  }, [searchParams, api_url]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
