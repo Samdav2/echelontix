@@ -6,6 +6,7 @@ import axios from 'axios';
 import { jsPDF } from "jspdf";
 import { motion, AnimatePresence } from 'framer-motion';
 import { Ticket, Download, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { eventNames } from "process";
 
 // --- Type Definitions ---
 // Represents a single table from the API
@@ -15,6 +16,7 @@ interface Table {
   capacity: number;
   price: string;
 }
+
 
 // Updated to match the 'events' object from the API
 interface EventDetails {
@@ -198,7 +200,7 @@ const EventForm: React.FC = () => {
       const ticketDataForPDF = {
         attendeeName: fullName, eventName: eventDetails!.event_name, eventDate: eventDetails!.date,
         eventTime: eventDetails!.time_in, ticketType: formData.selectedTicket.type, ticketToken: token,
-        qrCodeUrl: qrCodeUrl, eventImage: `https://app.samdavweb.org.ng/${eventDetails!.picture}`
+        qrCodeUrl: qrCodeUrl, eventImage: `https://app.echelontix.com.ng/${eventDetails!.picture}`
       };
 
       setGeneratedTicketData(ticketDataForPDF);
@@ -208,9 +210,11 @@ const EventForm: React.FC = () => {
           userId: userId,
           eventId: eventDetails!.id,
           email: formData.email,
+          qrcodeURL: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${token}` ,
           token: token,
           ticketType: formData.selectedTicket.type,
-          userName: fullName
+          userName: fullName,
+          eventName: eventDetails?.event_name
       });
 
       setTicketGenerated(true);
@@ -252,8 +256,8 @@ const EventForm: React.FC = () => {
     const options = [];
 
     // Standard tickets
-    if (parseFloat(eventDetails.price) >= 0) options.push({ label: `1 Headset - ₦${eventDetails.price}`, value: `regular-${eventDetails.price}` });
-    if (parseFloat(eventDetails.vip_price) > 0) options.push({ label: `2 Headset - ₦${eventDetails.vip_price}`, value: `vip-${eventDetails.vip_price}` });
+    if (parseFloat(eventDetails.price) >= 0) options.push({ label: `Regular - ₦${eventDetails.price}`, value: `regular-${eventDetails.price}` });
+    if (parseFloat(eventDetails.vip_price) > 0) options.push({ label: `VIP - ₦${eventDetails.vip_price}`, value: `vip-${eventDetails.vip_price}` });
     if (parseFloat(eventDetails.vvip_price) > 0) options.push({ label: `VVIP - ₦${eventDetails.vvip_price}`, value: `vvip-${eventDetails.vvip_price}` });
     if (parseFloat(eventDetails.vvvip_price) > 0) options.push({ label: `VVVIP - ₦${eventDetails.vvvip_price}`, value: `vvvip-${eventDetails.vvvip_price}` });
 
@@ -299,7 +303,7 @@ const EventForm: React.FC = () => {
         ) : (
             <motion.div key="form" initial={{opacity: 0}} animate={{opacity: 1}} className="relative z-10 max-w-6xl mx-auto px-4 py-20 flex flex-col lg:flex-row gap-10 items-start lg:items-center justify-between">
                 <div className="text-white max-w-lg space-y-6">
-                    <img src={`https://app.samdavweb.org.ng/${eventDetails.picture}`} alt={eventDetails.event_name} className="w-full sm:w-80 border-4 border-yellow-400 rounded-lg shadow-lg" />
+                    <img src={`https://app.echelontix.com.ng/${eventDetails.picture}`} alt={eventDetails.event_name} className="w-full sm:w-80 border-4 border-yellow-400 rounded-lg shadow-lg" />
                     <div className="space-y-2">
                         <p className="text-4xl font-extrabold">{formattedDate.day}<span className="text-lg block font-semibold">{formattedDate.month} {formattedDate.year}</span></p>
                         <p className="text-sm uppercase">Entry at {eventDetails.time_in}</p>

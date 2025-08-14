@@ -137,7 +137,7 @@ const EditEventModal = ({
             setDetails({ ...eventData.events, date: formattedDate });
             setTables(eventData.table || []);
             if (eventData.events.picture) {
-                setImagePreview(`https://app.samdavweb.org.ng/${eventData.events.picture}`);
+                setImagePreview(`https://app.echelontix.com.ng/${eventData.events.picture}`);
             } else {
                 setImagePreview(null);
             }
@@ -575,7 +575,7 @@ export default function CreatorDashboard() {
                         className="flex flex-col md:flex-row items-center gap-6 p-4 bg-black/20 border border-white/10 rounded-2xl hover:bg-black/40 transition-colors duration-300"
                       >
                         <img
-                          src={event.picture ? `https://app.samdavweb.org.ng/${event.picture}` : 'https://placehold.co/128x128/1a1a1a/ffffff?text=Event'}
+                          src={event.picture ? `https://app.echelontix.com.ng/${event.picture}` : 'https://placehold.co/128x128/1a1a1a/ffffff?text=Event'}
                           alt={event.event_name}
                           className="w-full md:w-32 h-32 rounded-lg object-cover"
                           onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/128x128/1a1a1a/ffffff?text=Event' }}
