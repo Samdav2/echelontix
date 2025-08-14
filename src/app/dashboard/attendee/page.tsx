@@ -1,13 +1,5 @@
 'use client';
 
-<<<<<<< HEAD
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation"; 
-import { Calendar, Clock, MapPin, Ticket, TrendingUp, Users, Star, CheckCircle } from "lucide-react";
-
-// Define the structure for the user data we expect from localStorage
-interface UserData {
-=======
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
@@ -26,7 +18,6 @@ import {
 
 // --- Type Definitions ---
 interface UserProfile {
->>>>>>> 0e06c72388c013d9beef6a27ad9fcb0e3e23a211
   name: string;
   email: string;
   user_id: string;
@@ -45,20 +36,6 @@ interface EventData {
 
 type EventStatus = 'live' | 'upcoming' | 'ended';
 
-<<<<<<< HEAD
-// --- MOCK DATA (In a real app, this would be fetched from an API) ---
-const attendedEvents: AttendedEvent[] = [
-  { id: '1', title: 'Summer Music Festival', date: '2024-05-15', location: 'Central Park, NYC', category: 'Music', rating: 5 },
-  { id: '2', title: 'Tech Innovation Summit', date: '2024-04-20', location: 'Convention Center', category: 'Tech', rating: 4 },
-  { id: '3', title: 'Modern Art Exhibition', date: '2024-03-30', location: 'Metropolitan Museum', category: 'Art', rating: 5 }
-];
-
-const upcomingEvents: UpcomingEvent[] = [
-  { id: '4', title: 'Food & Wine Tasting', date: '2024-09-10', time: '07:00 PM', location: 'Rooftop Restaurant', ticketType: 'VIP', price: 120, category: 'Food' },
-  { id: '5', title: 'Basketball Championship', date: '2024-07-25', time: '08:00 PM', location: 'Sports Arena', ticketType: 'General', price: 85, category: 'Sports' }
-];
-// --- END MOCK DATA ---
-=======
 // --- UI Sub-components ---
 
 const StatCard = ({ title, value, icon, colorClass }: { title: string, value: string, icon: React.ReactNode, colorClass: string }) => (
@@ -81,7 +58,6 @@ const EventCard = ({ event, status }: { event: EventData, status: EventStatus })
             router.push(`/registration?eventId=${event.id}`);
         }
     };
->>>>>>> 0e06c72388c013d9beef6a27ad9fcb0e3e23a211
 
     const statusStyles = {
         live: 'bg-red-500/20 text-red-400 border-red-500/30',
@@ -97,7 +73,7 @@ const EventCard = ({ event, status }: { event: EventData, status: EventStatus })
             className={`rounded-2xl overflow-hidden bg-black/30 border border-white/10 shadow-lg group transition-all duration-300 flex flex-col ${status !== 'ended' ? 'cursor-pointer hover:border-white/30 hover:shadow-2xl' : 'opacity-60'}`}
         >
             <div className="relative w-full h-40">
-                <img src={event.picture ? `https://app.samdavweb.org.ng/${event.picture}` : 'https://placehold.co/400x300/1a1a1a/ffffff?text=Event'} alt={event.event_name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                <img src={event.picture ? `https://app.echelontix.com.ng/${event.picture}` : 'https://placehold.co/400x300/1a1a1a/ffffff?text=Event'} alt={event.event_name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
                  <div className={`absolute top-3 right-3 text-xs font-semibold px-3 py-1 rounded-full backdrop-blur-md border ${statusStyles[status]}`}>
                     {status.charAt(0).toUpperCase() + status.slice(1)}
                 </div>
@@ -143,20 +119,6 @@ const SkeletonLoader = () => (
 
 // --- Main Dashboard Component ---
 
-<<<<<<< HEAD
-  const getCategoryColor = (category: string) => {
-    const colors = {
-      Music: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-      Tech: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-      Art: "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200",
-      Sports: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-      Food: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-    };
-    return (
-      colors[category as keyof typeof colors] ||
-      "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
-    );
-=======
 export default function AttendeeDashboard() {
   const router = useRouter();
   const [userData, setUserData] = useState<UserProfile | null>(null);
@@ -231,7 +193,6 @@ export default function AttendeeDashboard() {
     if (eventDay < today) return 'ended';
     if (eventDay.getTime() === today.getTime()) return 'live';
     return 'upcoming';
->>>>>>> 0e06c72388c013d9beef6a27ad9fcb0e3e23a211
   };
 
   // This logic now filters all events based on the user's interests
@@ -255,30 +216,7 @@ export default function AttendeeDashboard() {
     );
   }
 
-  const router = useRouter();
-
   return (
-<<<<<<< HEAD
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">My Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Welcome back, {userData.name}!</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-300">
-            <img
-              src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
-              alt="Avatar"
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div>
-            {/* Display the user's name and email dynamically */}
-            <div className="font-semibold text-foreground">{userData.name}</div>
-            <div className="text-sm text-muted-foreground">{userData.email}</div>
-=======
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
@@ -286,7 +224,6 @@ export default function AttendeeDashboard() {
           <div>
             <h1 className="text-4xl font-bold">My Dashboard</h1>
             <p className="text-gray-400 mt-1">Welcome back, {userData.name}!</p>
->>>>>>> 0e06c72388c013d9beef6a27ad9fcb0e3e23a211
           </div>
           <div className="flex items-center gap-3">
                 <button onClick={() => router.push('/interest')} className="flex items-center gap-2 bg-purple-500/10 text-purple-300 px-4 py-2 rounded-full font-semibold hover:bg-purple-500/20 hover:text-white transition-colors">

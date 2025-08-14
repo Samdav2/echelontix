@@ -75,7 +75,7 @@ const EventCard = ({
       <div className="relative w-full h-40">
         {getStatusBadge()}
         <img
-          src={image ? `https://app.samdavweb.org.ng/${image}`: placeholderImg}
+          src={image ? `https://app.echelontix.com.ng/${image}`: placeholderImg}
           alt={title}
           className="absolute inset-0 w-full h-full object-cover"
           onError={(e) => { (e.target as HTMLImageElement).src = placeholderImg }}
@@ -139,12 +139,11 @@ const LandingPage = () => {
   const [categories, setCategories] = useState<string[]>(["All", ...predefinedCategories]);
   const [isLoading, setIsLoading] = useState(true);
 
-
+  const url = process.env.NEXT_PUBLIC_API_URL;
   useEffect(() => {
     const fetchEvents = async () => {
       setIsLoading(true);
       try {
-        const url = 'https://app.samdavweb.org.ng/event/getAllEvent';
 
         const response = await axios.get(`${url}`);
 

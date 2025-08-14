@@ -1,10 +1,6 @@
 'use client';
 
-<<<<<<< HEAD
-import { useEffect, useState, useMemo } from 'react';
-=======
 import { useEffect, useState, useMemo, ChangeEvent, FormEvent, useRef } from 'react';
->>>>>>> 0e06c72388c013d9beef6a27ad9fcb0e3e23a211
 import { useRouter } from 'next/navigation';
 import axios, { AxiosError } from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -32,11 +28,7 @@ interface CreatorData {
   brandname: string;
 }
 
-<<<<<<< HEAD
-interface EventData {
-=======
 interface EventListData {
->>>>>>> 0e06c72388c013d9beef6a27ad9fcb0e3e23a211
   id: string;
   event_name: string;
   date: string;
@@ -145,7 +137,7 @@ const EditEventModal = ({
             setDetails({ ...eventData.events, date: formattedDate });
             setTables(eventData.table || []);
             if (eventData.events.picture) {
-                setImagePreview(`https://app.samdavweb.org.ng/${eventData.events.picture}`);
+                setImagePreview(`https://app.echelontix.com.ng/${eventData.events.picture}`);
             } else {
                 setImagePreview(null);
             }
@@ -347,8 +339,6 @@ export default function CreatorDashboard() {
       setEvents([]);
     } finally {
       setIsEventsLoading(false);
-<<<<<<< HEAD
-=======
     }
   };
 
@@ -437,7 +427,6 @@ export default function CreatorDashboard() {
         const error = err as AxiosError<{ message: string }>;
         const errorMessage = error.response?.data?.message || "An unexpected error occurred. Please try again.";
         alert(`Update Failed: ${errorMessage}`);
->>>>>>> 0e06c72388c013d9beef6a27ad9fcb0e3e23a211
     }
   };
 
@@ -456,10 +445,6 @@ export default function CreatorDashboard() {
     }
   };
 
-<<<<<<< HEAD
-  // --- Helper Functions & Memoized Calculations ---
-=======
->>>>>>> 0e06c72388c013d9beef6a27ad9fcb0e3e23a211
   const getEventStatus = (eventDate: string): EventStatus => {
     const now = new Date();
     const date = new Date(eventDate);
@@ -514,89 +499,6 @@ export default function CreatorDashboard() {
             transition={{ duration: 0.5 }}
             className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10"
           >
-<<<<<<< HEAD
-            <Plus className="w-5 h-5" />
-            Create New Event
-          </button>
-        </motion.div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-10">
-          <StatCard title="Total Revenue" value={`₦${stats.totalRevenue.toLocaleString()}`} icon={<TrendingUp />} colorClass="text-green-400" trend="+12% this month" />
-          <StatCard title="Total Attendees" value={stats.totalAttendees.toLocaleString()} icon={<Users />} colorClass="text-blue-400" />
-          <StatCard title="Active Events" value={stats.activeEvents.toString()} icon={<Calendar />} colorClass="text-purple-400" />
-        </div>
-
-        {/* Events List Section */}
-        <motion.div
-         initial={{ opacity: 0, y: 20 }}
-         animate={{ opacity: 1, y: 0 }}
-         transition={{ duration: 0.5, delay: 0.2 }}
-         className="bg-black/20 backdrop-blur-md border border-white/20 rounded-3xl p-6 sm:p-8 shadow-2xl"> </motion.div>
-          <div className="flex items-center justify-between mb-6">
-             <h2 className="text-2xl font-semibold">Your Events</h2>
-             <button className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition">
-                <BarChart2 className="w-4 h-4"/>
-                View Analytics
-             </button>
-          </div>
-
-          {isEventsLoading ? (
-            <EventListSkeleton />
-          ) : error ? (
-            <div className="text-center py-10 text-red-400 flex flex-col items-center gap-2">
-              <AlertCircle/>
-              <p>{error}</p>
-              <button onClick={fetchEvents} className="mt-4 px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition">Try Again</button>
-            </div>
-          ) : events.length === 0 ? (
-            <div className="text-center py-10 text-gray-400">
-              <p>You haven't created any events yet.</p>
-              <button onClick={handleCreateEventClick} className="mt-4 text-blue-400 font-semibold hover:underline">Create your first event</button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <AnimatePresence>
-                {events.map(event => {
-                  const status = getEventStatus(event.date);
-                  const statusInfo = getStatusInfo(status);
-                  return (
-                    <motion.div
-                      key={event.id}
-                      layout
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, x: -50 }}
-                      transition={{ duration: 0.3 }}
-                      className="flex flex-col md:flex-row items-center gap-6 p-4 bg-black/20 border border-white/10 rounded-2xl hover:bg-black/40 transition-colors duration-300"
-                    >
-                      <img
-                        src={event.picture ? `https://app.samdavweb.org.ng/${event.picture}` : 'https://placehold.co/128x128/1a1a1a/ffffff?text=Event'}
-                        alt={event.event_name}
-                        className="w-full md:w-32 h-32 rounded-lg object-cover"
-                        onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/128x128/1a1a1a/ffffff?text=Event' }}
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-1">
-                          <h3 className="font-semibold text-lg text-white">{event.event_name}</h3>
-                          <span className={`text-xs px-2 py-1 rounded-full border ${statusInfo.color}`}>
-                            {statusInfo.text}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-400 flex items-center gap-2">
-                          <Calendar className="w-4 h-4" />
-                          {new Date(event.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} at {event.time_in}
-                        </p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm text-gray-400">Attendees</p>
-                        <p className="text-xl font-bold text-white">{event.attendees || 0}</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm text-gray-400">Revenue</p>
-                        <p className="text-xl font-bold text-white">${(event.revenue || 0).toLocaleString()}</p>
-                      </div>
-=======
             <div>
               <h1 className="text-4xl font-bold">Creator Dashboard</h1>
               <p className="text-gray-400 mt-1">Welcome back, {creatorData.name}!</p>
@@ -673,7 +575,7 @@ export default function CreatorDashboard() {
                         className="flex flex-col md:flex-row items-center gap-6 p-4 bg-black/20 border border-white/10 rounded-2xl hover:bg-black/40 transition-colors duration-300"
                       >
                         <img
-                          src={event.picture ? `https://app.samdavweb.org.ng/${event.picture}` : 'https://placehold.co/128x128/1a1a1a/ffffff?text=Event'}
+                          src={event.picture ? `https://app.echelontix.com.ng/${event.picture}` : 'https://placehold.co/128x128/1a1a1a/ffffff?text=Event'}
                           alt={event.event_name}
                           className="w-full md:w-32 h-32 rounded-lg object-cover"
                           onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/128x128/1a1a1a/ffffff?text=Event' }}
@@ -726,4 +628,3 @@ export default function CreatorDashboard() {
     </>
   );
 };
->>>>>>> 0e06c72388c013d9beef6a27ad9fcb0e3e23a211
