@@ -145,7 +145,7 @@ const LandingPage = () => {
       setIsLoading(true);
       try {
 
-        const response = await axios.get(`${url}`);
+        const response = await axios.get(`${url}event/getAllEvent`);
 
         const data = response.data as { event: EventFromAPI[] };
         const apiEvents: EventFromAPI[] = data.event;
