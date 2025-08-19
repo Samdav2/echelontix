@@ -103,7 +103,7 @@ const EventCard = ({
       <div className="relative w-full h-40">
         {getStatusBadge()}
         <img
-          src={image ? `https://app.samdavweb.org.ng/${image}` : placeholderImg}
+          src={image ? `https://app.echelontix.com.ng/${image}` : placeholderImg}
           alt={title}
           className="absolute inset-0 w-full h-full object-cover"
           onError={(e) => { (e.target as HTMLImageElement).src = placeholderImg }}
@@ -176,7 +176,7 @@ const InterestSelection = () => {
       setIsLoading(true);
       setError(null);
       try {
-        const url = process.env.NEXT_PUBLIC_API_URL!;
+        const url = process.env.NEXT_PUBLIC_API_URL;
         const response = await axios.get(`${url}event/getAllEvent`);
 
         const apiEvents: EventFromAPI[] = response.data.event;

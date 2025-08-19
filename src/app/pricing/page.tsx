@@ -72,9 +72,9 @@ const PricingPage = () => {
               <li>✔️ Dedicated Support</li>
             </ul>
             <p className="text-white text-xl font-semibold mb-4">10% Fee</p>
-            <button className="bg-black text-yellow-400 px-6 py-2 rounded-full hover:bg-gray-800 transition">
+            /*<button className="bg-black text-yellow-400 px-6 py-2 rounded-full hover:bg-gray-800 transition">
               Upgrade Now
-            </button>
+            </button>*/
           </div>
         </div>
       </section>
