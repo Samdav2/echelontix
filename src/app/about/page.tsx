@@ -2,31 +2,29 @@
 
 import Image from 'next/image';
 
+const teamMembers = [
+  { name: 'Fredrick', role: 'Lead Developer' },
+  { name: 'Tolu', role: 'UI/UX Designer' },
+  { name: 'Bisi', role: 'Content Strategist' },
+  { name: 'Ada', role: 'Product Manager' },
+  //{ name: 'Yusuf', role: 'Frontend Engineer' },
+];
+
 const AboutPage = () => {
   return (
     <main className="min-h-screen bg-white text-gray-800">
-      {/* Navbar */}
-      {/*<nav className="flex items-center justify-between px-6 py-4 bg-gray-900 text-white shadow-md">
-        <div className="flex items-center gap-2">
-          <Image src="/logo.jpg" alt="Echelotix Logo" width={40} height={40} />
-          <span className="text-xl font-bold">ECHELONTIX</span>
-        </div>
-        <ul className="hidden md:flex space-x-6">
-          <li><a href="/" className="hover:text-yellow-400">Home</a></li>
-          <li><a href="#" className="hover:text-yellow-400">Event</a></li>
-          <li><a href="#" className="text-yellow-400 font-semibold">About</a></li>
-          <li><a href="#" className="hover:text-yellow-400">Contacts</a></li>
-          <li><a href="#" className="hover:text-yellow-400">Book Tickets</a></li>
-        </ul>
-      </nav>*/}
 
       {/* About Section */}
-      <section className="bg-pink-100 px-6 py-12 ">
-        <h2 className="text-4xl font-bold mb-4">Who we are...</h2>
-        <p className="max-w-3xl mx-auto text-lg list-inside font-medium text-black mt-2 space-y-2 ">
-          <strong>ECHELONTIX</strong> is an event hub where anyone can discover new events, read about past events, and get tickets. We handle the ticketing system for events, both online and offline, for event planners across Nigeria.
-        </p>
-      </section>
+<section className="bg-pink-100 px-6 py-12">
+  <div className="max-w-3xl">
+    <h2 className="text-4xl font-bold mb-4 pt-10">Who we are...</h2>
+    <p className="text-lg font-medium text-black space-y-2">
+      <strong>ECHELONTIX</strong> is an event hub where anyone can discover new events, read about past events, and get tickets. We handle the ticketing system for events, both online and offline, for event planners across Nigeria.
+         Nigeria’s all-in-one digital ticketing solution for bold creators, curious audiences, and unforgettable experiences.
+    </p>
+  </div>
+</section>
+
 
       {/* Mission Section */}
       <section className="bg-gray-100 px-6 py-12">
@@ -49,26 +47,59 @@ const AboutPage = () => {
       </section>
 
       {/* History Section */}
-      <section className="bg-pink-100 px-6 py-12">
+      <section className="bg-pink-100 px-6 py-12 ">
         <h2 className="text-2xl font-semibold mb-4 text-blue-700">History</h2>
-        <p className="max-w-3xl mx-auto text-lg text-left">
-          <strong>ECHELONTIX</strong> started in 2024 as an extension. It was a straightforward plan to create a ticket managing platform where event planners can sell tickets for any kind of event ranging from small house parties to large-scale music festivals.
+        <p className="max-w-3xl text-lg text-left">
+          <strong>ECHELONTIX</strong> started in 2024 as an extension. was born out of a need to make event ticketing more accessible, transparent,
+            and delightful for creators and attendees alike. Whether managing entry for intimate gatherings or high-impact festivals,
+            we equip event organizers with intuitive tools to sell, validate, and scale—fast. It was a straightforward plan to create a ticket managing platform where event planners can sell tickets for any kind of event ranging from small house parties to large-scale music festivals.
         </p>
       </section>
 
+
+       {/* Platform Features */}
+      <section className="px-6 py-16 bg-blue-50">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-semibold text-center mb-10">What Makes Us Different</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            <div>
+              <h4 className="font-semibold text-lg mb-2">🛠️ Event Tools</h4>
+              <p className="text-sm text-gray-700">Organizers get instant access to event dashboards, QR check-in, guest tracking, and promotional modules.</p>
+            </div>
+            <div>
+              <h4 className="font-semibold text-lg mb-2">🎟️ Ticketing Simplified</h4>
+              <p className="text-sm text-gray-700">From early bird passes to VIP seats—we make tickets flexible, secure, and easy to distribute.</p>
+            </div>
+            <div>
+              <h4 className="font-semibold text-lg mb-2">📈 Analytics</h4>
+              <p className="text-sm text-gray-700">Real-time metrics help organizers optimize performance, understand guests, and scale their impact.</p>
+            </div>
+            <div>
+              <h4 className="font-semibold text-lg mb-2">🔒 Fraud Protection</h4>
+              <p className="text-sm text-gray-700">Every ticket is verified. Every entry is authenticated. We take guest security seriously.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+       
       {/* Team Section */}
-      <section className="bg-blue-100 px-6 py-12 text-center">
-        <h2 className="text-2xl font-semibold mb-6">OUR TEAM</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 justify-items-center">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="w-28 h-28">
-              <Image
-                src="/assets/user.svg"
-                alt={`Team Member ${i + 1}`}
-                width={112}
-                height={112}
-                className="rounded-full object-cover"
-              />
+      <section className="px-6 py-16 text-center bg-white">
+        <h2 className="text-3xl font-semibold mb-8">Meet the Team</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-8 justify-items-center">
+          {teamMembers.map(({ name, role }, i) => (
+            <div key={i} className="flex flex-col items-center">
+              <div className="w-24 h-24 relative">
+                <Image
+                  src="/assets/user.svg"
+                  alt={name}
+                  width={96}
+                  height={96}
+                  className="rounded-full object-cover"
+                />
+              </div>
+              <p className="mt-2 text-sm font-bold">{name}</p>
+              <p className="text-xs text-gray-500">{role}</p>
             </div>
           ))}
         </div>
