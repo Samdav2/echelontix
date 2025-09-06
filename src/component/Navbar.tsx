@@ -10,6 +10,7 @@ const Navbar = () => {
   const goToBodyComponent = () => router.push('../BodyComponent');
   const goToAbout = () => router.push('/about');
   const explore = () => router.push('/explore');
+  const Register = () => router.push('/auth/signin');
   const chooseRole = () => router.push("/choose-role");
 
   return (
@@ -54,7 +55,7 @@ const Navbar = () => {
               <li>
                 <button onClick={explore} className="hover:text-yellow-400">Explore</button>
               </li>
-              <li>
+            <li>
                 <a href="#" className="hover:text-yellow-400">Terms</a>
               </li>
               <li>
@@ -71,9 +72,12 @@ const Navbar = () => {
               <button onClick={goToBodyComponent} className="block text-center py-2 bg-yellow-400 text-black font-bold rounded">Home</button>
             </li>
             <li>
-              <button onClick={goToAbout} className="block w-full text-center py-2 hover:text-yellow-400">About Us</button>
+              <button onClick={Register} className="block w-full text-center py-2 hover:text-yellow-400">Create Event</button>
             </li>
             <li>
+              <button onClick={goToAbout} className="block w-full text-center py-2 hover:text-yellow-400">About Us</button>
+            </li>
+            {/*<li>
               <a href="#" className="block text-center py-2 hover:text-yellow-400">Contacts</a>
             </li>
             <li>
@@ -81,7 +85,7 @@ const Navbar = () => {
             </li>
             <li>
               <a href="#" className="block text-center py-2 hover:text-yellow-400">Terms</a>
-            </li>
+            </li>*/}
           </ul>
         )}
       </nav>
