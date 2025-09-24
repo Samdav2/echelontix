@@ -37,7 +37,7 @@ const Footer = () => {
           <h3 className="font-semibold mb-3 uppercase">Links</h3>
           <ul className="space-y-2">
             <li><button onClick={home} className="hover:underline">Home</button></li>
-            <li><button onClick={team} className="hover:underline">Team</button></li>
+            <li><button onClick={goToAbout} className="hover:underline">About Us</button></li>
             <li><button onClick={explore} className="hover:underline">Book Tickets</button></li>
             <li><button onClick={pricing} className="hover:underline">Pricing</button></li>
             <li><button onClick={() => router.push('/faq')} className="hover:underline">FAQ</button></li>

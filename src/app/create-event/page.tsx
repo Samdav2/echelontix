@@ -45,6 +45,12 @@ interface EventDetails {
     vvvip_price: string;
 }
 
+interface CustomTicket {
+  name: string;
+  quantity: string;
+  price: string;
+}
+
 // --- Bank List and Code Mapping Constants ---
 const bankCodeMapping: { [key: string]: string } = {
     '9MOBILE 9PAYMENT SERVICE BANK': '120001', 'ABBEY MORTGAGE BANK': '801', 'ABOVE ONLY MFB': '51204',
@@ -89,6 +95,7 @@ const CreateEventPage: React.FC = () => {
         account_number: "", bank: "", vvvip_price: "0"
     });
 
+  
     const [tables, setTables] = useState<Table[]>([]);
 
     useEffect(() => {
@@ -271,7 +278,7 @@ const CreateEventPage: React.FC = () => {
                              <h4 className="text-yellow-400 text-lg font-semibold">VVIP</h4>
                              <input type="number" name="vvip" value={eventDetails.vvip} onChange={handleChange} placeholder="VVIP Price (₦)" min="0" className="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400" />
                              <h4 className="text-yellow-400 text-lg font-semibold">VVVIP</h4>
-                             <input type="number" name="vvvip_price" value={eventDetails.vvvip_price} onChange={handleChange} placeholder="VVVIP Price (₦)" min="0" className="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400" />
+                             <input type="number" name="vvvip_price" value={eventDetails.vvvip_price} onChange={handleChange} placeholder="VVVIP Price (₦)" min="0" className="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400" /> 
 
                              {/* --- Dynamic Table Section --- */}
                             <div className="border-t border-gray-700 pt-4">

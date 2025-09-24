@@ -7,8 +7,10 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
 
+  const goToBodyComponent = () => router.push('../BodyComponent');
   const goToAbout = () => router.push('/about');
   const explore = () => router.push('/explore');
+  const Register = () => router.push('/auth/signin');
   const chooseRole = () => router.push("/choose-role");
 
   return (
@@ -42,7 +44,7 @@ const Navbar = () => {
               </li>
 
               <li>
-                <a href="/" className="text-white hover:text-yellow-400 py-2 px-4">Home</a>
+                <button onClick={goToBodyComponent} className="text-white hover:text-yellow-400 py-2 px-4">Home</button>
               </li>
               <li>
                 <button onClick={goToAbout} className="hover:text-yellow-400">About Us</button>
@@ -51,13 +53,10 @@ const Navbar = () => {
                 <a href="" onClick={() => router.push('/')} className="hover:text-yellow-400">Contacts</a>
               </li>
               <li>
-                <button onClick={explore} className="hover:text-yellow-400">Book Tickets</button>
+                <button onClick={explore} className="hover:text-yellow-400">Explore</button>
               </li>
-              <li>
-                <button onClick={() => router.push('/privacy-policy')} className="hover:text-yellow-400">Privacy</button>
-              </li>
-               <li>
-                <button onClick={() => router.push('/terms-condition')} className="hover:text-yellow-400">Terms</button>
+            <li>
+                <a href="#" className="hover:text-yellow-400">Terms</a>
               </li>
               <li>
                 <button onClick={chooseRole} className="hover:text-yellow-400">SignUp</button>
@@ -70,24 +69,23 @@ const Navbar = () => {
         {isOpen && (
           <ul className="flex flex-col mt-4 space-y-2 md:hidden">
             <li>
-              <a href="#" className="block text-center py-2 bg-yellow-400 text-black font-bold rounded">Home</a>
+              <button onClick={goToBodyComponent} className="block text-center py-2 bg-yellow-400 text-black font-bold rounded">Home</button>
+            </li>
+            <li>
+              <button onClick={Register} className="block w-full text-center py-2 hover:text-yellow-400">Create Event</button>
             </li>
             <li>
               <button onClick={goToAbout} className="block w-full text-center py-2 hover:text-yellow-400">About Us</button>
             </li>
-            <li>
+            {/*<li>
               <a href="#" className="block text-center py-2 hover:text-yellow-400">Contacts</a>
             </li>
             <li>
-              <button onClick={explore} className="block w-full text-center py-2 hover:text-yellow-400">Book Tickets</button>
+              <button onClick={explore} className="block w-full text-center py-2 hover:text-yellow-400">Explore</button>
             </li>
             <li>
-                <button onClick={() => router.push('/privacy-policy')} className="block w-full text-center py-2 hover:text-yellow-400">Privacy</button>
-              </li>
-               <li>
-                <button onClick={() => router.push('/terms-condition')} className="block w-full text-center py-2 hover:text-yellow-400">Terms</button>
-              </li>
-           
+              <a href="#" className="block text-center py-2 hover:text-yellow-400">Terms</a>
+            </li>*/}
           </ul>
         )}
       </nav>
