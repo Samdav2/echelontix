@@ -42,19 +42,22 @@ const Navbar = () => {
               </li>
 
               <li>
-                <a href="#" className="text-white hover:text-yellow-400 py-2 px-4">Home</a>
+                <a href="/" className="text-white hover:text-yellow-400 py-2 px-4">Home</a>
               </li>
               <li>
                 <button onClick={goToAbout} className="hover:text-yellow-400">About Us</button>
               </li>
               <li>
-                <a href="#" className="hover:text-yellow-400">Contacts</a>
+                <a href="" onClick={() => router.push('/')} className="hover:text-yellow-400">Contacts</a>
               </li>
               <li>
                 <button onClick={explore} className="hover:text-yellow-400">Book Tickets</button>
               </li>
               <li>
-                <a href="#" className="hover:text-yellow-400">Terms</a>
+                <button onClick={() => router.push('/privacy-policy')} className="hover:text-yellow-400">Privacy</button>
+              </li>
+               <li>
+                <button onClick={() => router.push('/terms-condition')} className="hover:text-yellow-400">Terms</button>
               </li>
               <li>
                 <button onClick={chooseRole} className="hover:text-yellow-400">SignUp</button>
@@ -79,8 +82,12 @@ const Navbar = () => {
               <button onClick={explore} className="block w-full text-center py-2 hover:text-yellow-400">Book Tickets</button>
             </li>
             <li>
-              <a href="#" className="block text-center py-2 hover:text-yellow-400">Terms</a>
-            </li>
+                <button onClick={() => router.push('/privacy-policy')} className="block w-full text-center py-2 hover:text-yellow-400">Privacy</button>
+              </li>
+               <li>
+                <button onClick={() => router.push('/terms-condition')} className="block w-full text-center py-2 hover:text-yellow-400">Terms</button>
+              </li>
+           
           </ul>
         )}
       </nav>

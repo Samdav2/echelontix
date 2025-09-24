@@ -73,6 +73,17 @@ interface FullEventData {
     table: TableData[];
 }
 
+interface AdminData {
+    brand: string;
+    event: [];
+    totalEvents: number;
+    totalRevenue: number;
+    totalTicket: number;
+}
+
+let revenue_core = 0
+let totalAttendees_core = 0
+let map_event = Array()
 
 type EventStatus = 'live' | 'upcoming' | 'ended';
 
@@ -111,6 +122,7 @@ const EventListSkeleton = () => (
         ))}
     </div>
 );
+
 
 // --- Edit Modal Component ---
 const EditEventModal = ({
@@ -299,6 +311,8 @@ export default function CreatorDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isEventsLoading, setIsEventsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [admin, setAdmin] = useState<AdminData[]>([]);
+
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<FullEventData | null>(null);
@@ -341,26 +355,50 @@ export default function CreatorDashboard() {
       setIsEventsLoading(false);
     }
   };
-
-  const handleEditClick = async (eventId: string) => {
+  const fetchDash = async () => {
+    if (!creatorData) return;
+    setError(null);
     try {
-        const response = await axios.get<FullEventData>(`${url}event/getEvent?eventId=${eventId}`);
-        if (response.data) {
-            setEditingEvent(response.data);
-            setIsEditModalOpen(true);
-        } else {
-            throw new Error("Event data not found in response");
-        }
+      const response = await axios.get(`${url}event/getDashboard?brand=${encodeURIComponent(creatorData.brandname)}`);
+      console.log(response.data);
+      revenue_core = response.data.totalRevenue
+      totalAttendees_core = response.data.totalTickets
+      map_event = response.data.events
+
+      setAdmin(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
-        console.error("Failed to fetch event details for editing:", err);
-        alert("Could not load event details. Please try again.");
+      console.error("Failed to fetch events:", err);
+      setError("Could not load your events.");
+      setAdmin([]);
+    } finally {
+      // setIsEventsLoading(false);
     }
   };
+  useEffect(() => {
+    fetchDash();
+  }, [creatorData]);
 
-  /**
-   * Professionally handles the event update process by making two distinct API calls.
-   * This version sends event data as a standard JSON object and does not handle file uploads.
-   */
+  // // // // /**
+
+   const handleEditClick = async (eventId: string) => {
+     try {
+       const response = await axios.get<FullEventData>(`${url}event/getEvent?eventId=${eventId}`);
+       if (response.data) {
+           setEditingEvent(response.data);
+           setIsEditModalOpen(true);
+       } else {
+          throw new Error("Event data not found in response");
+        }
+    } catch (err) {
+         console.error("Failed to fetch event details for editing:", err);
+         alert("Could not load event details. Please try again.");
+   }
+  };
+
+  // // // // /**
+  // // // //  * Professionally handles the event update process by making two distinct API calls.
+  // // // //  * This version sends event data as a standard JSON object and does not handle file uploads.
+
   const handleUpdateEvent = async (eventDetails: EventDetails, tables: TableData[], imageFile: File | null) => {
     try {
         // --- Step 1: Update Event Tables (Using User's Provided Logic) ---
@@ -470,8 +508,8 @@ export default function CreatorDashboard() {
   const handleExploreEventClick = () => router.push('/explore');
   const handleProfileUpdateClick = () => router.push('/update');
 
-  const totalRevenue = useMemo(() => events.reduce((sum, event) => sum + (event.revenue || 0), 0), [events]);
-  const totalAttendees = useMemo(() => events.reduce((sum, event) => sum + (event.attendees || 0), 0), [events]);
+  const totalRevenue = revenue_core
+  const totalAttendees = totalAttendees_core
   const activeEvents = useMemo(() => events.filter(event => getEventStatus(event.date) !== 'ended').length, [events]);
   const stats = { totalRevenue, totalAttendees, activeEvents };
 
@@ -527,8 +565,8 @@ export default function CreatorDashboard() {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-10">
-            <StatCard title="Total Revenue" value={`₦${stats.totalRevenue.toLocaleString()}`} icon={<TrendingUp />} colorClass="text-green-400" trend="+12% this month" />
-            <StatCard title="Total Attendees" value={stats.totalAttendees.toLocaleString()} icon={<Users />} colorClass="text-blue-400" />
+            <StatCard title="Total Revenue" value={`₦${totalRevenue.toLocaleString()}`} icon={<TrendingUp />} colorClass="text-green-400" trend="+12% this month" />
+            <StatCard title="Total Attendees" value={totalAttendees.toLocaleString()} icon={<Users />} colorClass="text-blue-400" />
             <StatCard title="Active Events" value={stats.activeEvents.toString()} icon={<Calendar />} colorClass="text-purple-400" />
           </div>
 
@@ -561,7 +599,7 @@ export default function CreatorDashboard() {
             ) : (
               <div className="space-y-4">
                 <AnimatePresence>
-                  {events.map(event => {
+                  {map_event.map(event => {
                     const status = getEventStatus(event.date);
                     const statusInfo = getStatusInfo(status);
                     return (

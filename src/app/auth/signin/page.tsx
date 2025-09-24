@@ -1,11 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-<<<<<<< HEAD
-import { useRouter } from 'next/navigation';
-=======
 import { useRouter } from 'next/navigation'; // Corrected: Use 'next/navigation' for the App Router
->>>>>>> 0e06c72388c013d9beef6a27ad9fcb0e3e23a211
 import { Eye, EyeOff } from 'lucide-react';
 import axios from 'axios';
 
@@ -34,11 +30,7 @@ const Alert: React.FC<{ message: string; type: 'error' | 'success' }> = ({ messa
 };
 
 const SignInPage: React.FC = () => {
-<<<<<<< HEAD
-  const router = useRouter();
-=======
   const router = useRouter(); // Initialize the router
->>>>>>> 0e06c72388c013d9beef6a27ad9fcb0e3e23a211
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -63,14 +55,9 @@ const SignInPage: React.FC = () => {
 
     try {
       const user = { email, password };
-<<<<<<< HEAD
-      const loginUrl = process.env.NEXT_PUBLIC_USER_LOGIN!;
-      const response = await axios.post<LoginResponse>(loginUrl, user);
-=======
       const loginUrl = process.env.NEXT_PUBLIC_API_URL;
 
       const response = await axios.post(`${loginUrl}auth/login`, user);
->>>>>>> 0e06c72388c013d9beef6a27ad9fcb0e3e23a211
 
       if (response.data) {
         setSuccessMessage('Login Successful! Redirecting...');
@@ -110,19 +97,12 @@ const SignInPage: React.FC = () => {
           </div>
         </div>
 
-<<<<<<< HEAD
-=======
         {/* Heading */}
->>>>>>> 0e06c72388c013d9beef6a27ad9fcb0e3e23a211
         <h1 className="text-2xl font-bold mb-6 text-white text-center">Welcome Back</h1>
         <h3 className="font-bold mb-3 text-white">Please Log In To Your Account</h3>
 
         <form onSubmit={handleSignIn} noValidate>
-<<<<<<< HEAD
-          {/* Email */}
-=======
           {/* Email Input */}
->>>>>>> 0e06c72388c013d9beef6a27ad9fcb0e3e23a211
           <input
             type="email"
             placeholder="Email"

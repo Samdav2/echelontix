@@ -40,6 +40,10 @@ const Footer = () => {
             <li><button onClick={team} className="hover:underline">Team</button></li>
             <li><button onClick={explore} className="hover:underline">Book Tickets</button></li>
             <li><button onClick={pricing} className="hover:underline">Pricing</button></li>
+            <li><button onClick={() => router.push('/faq')} className="hover:underline">FAQ</button></li>
+            <li><button onClick={() => router.push('/refund-policy')} className="hover:underline">Refund Policy</button></li>
+
+
           </ul>
         </div>
 
@@ -60,16 +64,16 @@ const Footer = () => {
 
           <div className="flex gap-4 mt-4 text-yellow-400 text-lg">
             <a href="#"><FaFacebookF /></a>
-            <a href="#"><FaInstagram /></a>
+            <a href="https://www.instagram.com/echelontix?igsh=MWtxc2JkOWk5a29waQ=="><FaInstagram /></a>
             <a href="#"><FaTwitter /></a>
             <a href="#"><FaPaperPlane /></a>
           </div>
 
-          <div className="mt-4">
-            <a href="#" className="hover:underline text-sm mr-4">
-              User Terms & Conditions
+          <div className="mt-8">
+            <a href="/terms-condition" className="hover:underline text-sm mr-4">
+               Terms & Conditions
             </a>
-            <a href="#" className="hover:underline text-sm">
+            <a href="/privacy-policy" className="hover:underline text-sm">
               Privacy Policy
             </a>
           </div>

@@ -290,7 +290,7 @@ const EventForm: React.FC = () => {
   };
 
   return (
-    <section className="w-full min-h-screen bg-cover bg-center bg-no-repeat text-white relative" style={{ backgroundImage: "url('/assets/ba.jpg')" }}>
+    <section className="w-full min-h-screen bg-contain bg-top bg-repeat text-white relative" style={{ backgroundImage: "url('/assets/echelontix.jpeg')" }}>
       <AnimatePresence>
         {ticketGenerated ? (
             <motion.div key="success" initial={{opacity: 0}} animate={{opacity: 1}} className="relative z-20 flex flex-col items-center justify-center min-h-screen p-4">

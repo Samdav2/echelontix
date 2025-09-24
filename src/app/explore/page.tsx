@@ -168,16 +168,18 @@ const InterestSelection = () => {
       setIsLoading(true);
       setError(null);
       try {
-      
-        const url = 'https://app.samdavweb.org.ng/event/getAllEvent';
+        const api = process.env.NEXT_PUBLIC_API_URL
+
+        const url =  `${api}event/getAllEvent`;
 
         //const data = response.data as { event: EventFromAPI[] };
         //const apiEvents: EventFromAPI[] = data.event;
 
         const response = await axios.get(url);
          const data = response.data as { event: EventFromAPI[] };
+         setAllEvents(data.event);
         const apiEvents: EventFromAPI[] = data.event;
-        
+
 
         const uniqueApiCategories = new Set<string>(apiEvents.map(e => e.category).filter(Boolean));
         const combinedCategories = new Set([...predefinedCategories, ...Array.from(uniqueApiCategories)]);
