@@ -117,7 +117,7 @@ const Home: React.FC = () => {
     </section>
 
     {/*Nomination and event Section*/}
-<section className="max-w-screen-xl max-auto max-w-[1240px] bg-gradient-to-br from-purple-700 to-pink-400 text-white py-10 px-6 flex flex-col ">
+<section className="max-w-screen-xl max-auto bg-gradient-to-br from-purple-700 to-pink-400 text-white py-10 px-6 flex flex-col ">
       <h1 className="text-3xl sm:text-3xl lg:text-5xl text-yellow-400 mb-4 text-center">
         Create Event
       </h1>
