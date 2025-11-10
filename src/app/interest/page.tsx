@@ -59,7 +59,7 @@ interface EventData {
 type EventStatus = 'live' | 'upcoming' | 'ended';
 
 // --- UI Sub-components ---
-
+const base_url = process.env.NEXT_PUBLIC_API_URL;
 const EventCard = ({ event, status }: { event: EventData, status: EventStatus }) => {
     const router = useRouter();
     const handleEventClick = () => {
@@ -82,7 +82,7 @@ const EventCard = ({ event, status }: { event: EventData, status: EventStatus })
             className={`rounded-2xl overflow-hidden bg-black/30 border border-white/10 shadow-lg group transition-all duration-300 ${status !== 'ended' ? 'cursor-pointer hover:border-white/30 hover:shadow-2xl hover:-translate-y-1' : 'opacity-60'}`}
         >
             <div className="relative w-full h-48">
-                <img src={event.picture ? `https://app.echelontix.com.ng/${event.picture}` : 'https://placehold.co/400x300/1a1a1a/ffffff?text=Event'} alt={event.event_name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                <img src={event.picture ? `${base_url}${event.picture}` : 'https://placehold.co/400x300/1a1a1a/ffffff?text=Event'} alt={event.event_name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
                 <div className={`absolute top-3 right-3 text-xs font-semibold px-3 py-1 rounded-full backdrop-blur-md border ${statusStyles[status]}`}>
                     {status.charAt(0).toUpperCase() + status.slice(1)}
                 </div>

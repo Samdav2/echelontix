@@ -5,11 +5,10 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import axios from 'axios';
 import { jsPDF } from "jspdf";
 import { motion, AnimatePresence } from 'framer-motion';
-import { Ticket, Download, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
-import { eventNames } from "process";
+// Added MapPin to imports
+import { Ticket, Download, Loader2, CheckCircle, AlertCircle, MapPin } from 'lucide-react';
 
 // --- Type Definitions ---
-// Represents a single table from the API
 interface Table {
   id: number;
   name: string;
@@ -17,8 +16,6 @@ interface Table {
   price: string;
 }
 
-
-// Updated to match the 'events' object from the API
 interface EventDetails {
   id: number;
   event_name: string;
@@ -36,12 +33,10 @@ interface EventDetails {
   bank: string;
 }
 
-// Represents the entire API response
 interface EventApiResponse {
     events: EventDetails;
     table: Table[];
 }
-
 
 interface FormData {
   firstName: string;
@@ -58,7 +53,7 @@ interface FormData {
 const EventForm: React.FC = () => {
   const searchParams = useSearchParams();
   const [eventDetails, setEventDetails] = useState<EventDetails | null>(null);
-  const [tables, setTables] = useState<Table[]>([]); // State to hold table data
+  const [tables, setTables] = useState<Table[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -68,7 +63,7 @@ const EventForm: React.FC = () => {
     gender: '',
     selectedTicket: { type: 'regular', price: 0 },
   });
-   const router = useRouter();
+  const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
   const [ticketGenerated, setTicketGenerated] = useState(false);
   const [generatedTicketData, setGeneratedTicketData] = useState<any>(null);
@@ -98,7 +93,6 @@ const EventForm: React.FC = () => {
       setError(null);
       try {
         const getEventUrl = `${url}event/getEvent?eventId=`;
-        // The response is now expected to be an object with 'events' and 'table' properties
         const response = await axios.get<EventApiResponse>(`${getEventUrl}${eventId}`);
 
         if (response.data && response.data.events) {
@@ -108,7 +102,6 @@ const EventForm: React.FC = () => {
           setEventDetails(details);
           setTables(tableData);
 
-          // Set default ticket price from the main event price
           setFormData(prev => ({ ...prev, selectedTicket: { type: 'regular', price: parseFloat(details.price) || 0 } }));
         } else {
           throw new Error("Event data is not in the expected format.");
@@ -149,7 +142,6 @@ const EventForm: React.FC = () => {
     const colors = {
       REGULAR: '#6366F1', VIP: '#D97706', VVIP: '#7E22CE', TABLE: '#DC2626', DEFAULT: '#4B5563'
     };
-    // Use a generic color for tables unless specific names are matched
     const ticketColor = colors[ticketType as keyof typeof colors] || colors.TABLE;
 
     doc.addImage(ticketData.eventImage, 'JPEG', 0, 0, 400, 200);
@@ -200,7 +192,7 @@ const EventForm: React.FC = () => {
       const ticketDataForPDF = {
         attendeeName: fullName, eventName: eventDetails!.event_name, eventDate: eventDetails!.date,
         eventTime: eventDetails!.time_in, ticketType: formData.selectedTicket.type, ticketToken: token,
-        qrCodeUrl: qrCodeUrl, eventImage: `https://app.echelontix.com.ng/${eventDetails!.picture}`
+        qrCodeUrl: qrCodeUrl, eventImage: `${url}${eventDetails!.picture}`
       };
 
       setGeneratedTicketData(ticketDataForPDF);
@@ -240,7 +232,7 @@ const EventForm: React.FC = () => {
       amount: formData.selectedTicket.price * 100,
       ref: (new Date()).getTime().toString(),
       onClose: () => {
-        // setError("Payment was cancelled."); // Optional: show message on close
+        // setError("Payment was cancelled.");
       },
       callback: () => {
         handlePaymentSuccess();
@@ -249,24 +241,20 @@ const EventForm: React.FC = () => {
     handler.openIframe();
   };
 
-  // This function now dynamically generates all ticket options
   const getTicketOptions = () => {
     if (!eventDetails) return [];
 
     const options = [];
 
-    // Standard tickets
     if (parseFloat(eventDetails.price) >= 0) options.push({ label: `Regular - ₦${eventDetails.price}`, value: `regular-${eventDetails.price}` });
     if (parseFloat(eventDetails.vip_price) > 0) options.push({ label: `VIP - ₦${eventDetails.vip_price}`, value: `vip-${eventDetails.vip_price}` });
     if (parseFloat(eventDetails.vvip_price) > 0) options.push({ label: `VVIP - ₦${eventDetails.vvip_price}`, value: `vvip-${eventDetails.vvip_price}` });
     if (parseFloat(eventDetails.vvvip_price) > 0) options.push({ label: `VVVIP - ₦${eventDetails.vvvip_price}`, value: `vvvip-${eventDetails.vvvip_price}` });
 
-    // Dynamic tables from the API
     if (tables.length > 0) {
         tables.forEach(table => {
             options.push({
                 label: `${table.name} (Capacity: ${table.capacity}) - ₦${table.price}`,
-                // Use table name as type for simplicity
                 value: `${table.name.replace(/\s+/g, '_')}-${table.price}`
             });
         });
@@ -286,57 +274,97 @@ const EventForm: React.FC = () => {
   };
 
   return (
-    <section className="w-full min-h-screen bg-cover bg-center bg-no-repeat text-white relative" style={{ backgroundImage: "url('/assets/ba.jpg')" }}>
-      <AnimatePresence>
-        {ticketGenerated ? (
-            <motion.div key="success" initial={{opacity: 0}} animate={{opacity: 1}} className="relative z-20 flex flex-col items-center justify-center min-h-screen p-4">
-                <div className="bg-black/50 backdrop-blur-lg p-8 rounded-2xl text-center border border-yellow-400/50 max-w-lg">
-                    <CheckCircle className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
-                    <h2 className="text-3xl font-bold mb-2">Registration Complete!</h2>
-                    <p className="text-gray-300 mb-6">Your ticket has been generated. Download it now and get ready for an amazing experience.</p>
-                    <button onClick={() => createStyledPDF(generatedTicketData)} className="w-full flex items-center justify-center gap-2 bg-yellow-400 text-black font-bold py-3 rounded-lg hover:bg-yellow-300 transition-all duration-300">
-                        <Download />
-                        Download Your Ticket (PDF)
-                    </button>
-                </div>
-            </motion.div>
-        ) : (
-            <motion.div key="form" initial={{opacity: 0}} animate={{opacity: 1}} className="relative z-10 max-w-6xl mx-auto px-4 py-20 flex flex-col lg:flex-row gap-10 items-start lg:items-center justify-between">
-                <div className="text-white max-w-lg space-y-6">
-                    <img src={`https://app.echelontix.com.ng/${eventDetails.picture}`} alt={eventDetails.event_name} className="w-full sm:w-80 border-4 border-yellow-400 rounded-lg shadow-lg" />
-                    <div className="space-y-2">
-                        <p className="text-4xl font-extrabold">{formattedDate.day}<span className="text-lg block font-semibold">{formattedDate.month} {formattedDate.year}</span></p>
-                        <p className="text-sm uppercase">Entry at {eventDetails.time_in}</p>
-                        <p className="text-sm">Venue: {eventDetails.event_address}</p>
-                        <div className="mt-4"><p className="font-semibold">Event Summary</p><p className="text-sm">{eventDetails.summary}</p></div>
+    <section className="w-full min-h-screen bg-cover bg-center bg-no-repeat text-white relative overflow-y-auto" style={{ backgroundImage: "url('/assets/ba.jpg')" }}>
+      {/* Main content scroll wrapper */}
+      <div className="relative w-full h-full overflow-y-auto pb-20">
+        <AnimatePresence>
+            {ticketGenerated ? (
+                <motion.div key="success" initial={{opacity: 0}} animate={{opacity: 1}} className="relative z-20 flex flex-col items-center justify-center min-h-[80vh] p-4">
+                    <div className="bg-black/50 backdrop-blur-lg p-8 rounded-2xl text-center border border-yellow-400/50 max-w-lg mt-20">
+                        <CheckCircle className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+                        <h2 className="text-3xl font-bold mb-2">Registration Complete!</h2>
+                        <p className="text-gray-300 mb-6">Your ticket has been generated. Download it now and get ready for an amazing experience.</p>
+                        <button onClick={() => createStyledPDF(generatedTicketData)} className="w-full flex items-center justify-center gap-2 bg-yellow-400 text-black font-bold py-3 rounded-lg hover:bg-yellow-300 transition-all duration-300">
+                            <Download />
+                            Download Your Ticket (PDF)
+                        </button>
                     </div>
-                </div>
-                <div className="bg-[#1f1f1f] bg-opacity-90 p-8 rounded-lg shadow-2xl w-full max-w-md">
-                    <h2 className="text-xl font-bold text-center uppercase mb-1">{eventDetails.event_name}</h2>
-                    <p className="text-sm text-center text-gray-300 mb-6">Attendee Information</p>
-                    <form className="space-y-4">
-                        <div className="flex gap-3">
-                            <input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} placeholder="First Name" className="w-1/2 px-4 py-2 bg-gray-800 border border-gray-700 rounded text-sm focus:ring-yellow-400" required />
-                            <input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} placeholder="Last Name" className="w-1/2 px-4 py-2 bg-gray-800 border border-gray-700 rounded text-sm focus:ring-yellow-400" required />
+                </motion.div>
+            ) : (
+                <motion.div key="form" initial={{opacity: 0}} animate={{opacity: 1}} className="flex flex-col">
+                    {/* Top Section: Details & Form */}
+                    <div className="relative z-10 max-w-6xl mx-auto px-4 pt-20 pb-10 flex flex-col lg:flex-row gap-10 items-start lg:items-center justify-between w-full">
+                        <div className="text-white max-w-lg space-y-6">
+                            <img src={`${url}${eventDetails.picture}`} alt={eventDetails.event_name} className="w-full sm:w-80 border-4 border-yellow-400 rounded-lg shadow-lg" />
+                            <div className="space-y-2">
+                                <p className="text-4xl font-extrabold">{formattedDate.day}<span className="text-lg block font-semibold">{formattedDate.month} {formattedDate.year}</span></p>
+                                <p className="text-sm uppercase">Entry at {eventDetails.time_in}</p>
+                                <p className="text-sm">Venue: {eventDetails.event_address}</p>
+                                <div className="mt-4"><p className="font-semibold">Event Summary</p><p className="text-sm">{eventDetails.summary}</p></div>
+                            </div>
                         </div>
-                        <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="Email Address" className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded text-sm focus:ring-yellow-400" required />
-                        <select name="selectedTicket" value={`${formData.selectedTicket.type}-${formData.selectedTicket.price}`} onChange={handleTicketSelection} className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded text-sm text-gray-300 focus:ring-yellow-400" required>
-                            <option value="">Select a Ticket - {formData.selectedTicket.type}</option>
-                            {getTicketOptions().map(opt => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
-                        </select>
+                        <div className="bg-[#1f1f1f] bg-opacity-90 p-8 rounded-lg shadow-2xl w-full max-w-md border-t-4 border-yellow-400">
+                            <h2 className="text-xl font-bold text-center uppercase mb-1">{eventDetails.event_name}</h2>
+                            <p className="text-sm text-center text-gray-300 mb-6">Attendee Information</p>
+                            <form className="space-y-4">
+                                <div className="flex gap-3">
+                                    <input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} placeholder="First Name" className="w-1/2 px-4 py-2 bg-gray-800 border border-gray-700 rounded text-sm focus:ring-yellow-400 text-white" required />
+                                    <input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} placeholder="Last Name" className="w-1/2 px-4 py-2 bg-gray-800 border border-gray-700 rounded text-sm focus:ring-yellow-400 text-white" required />
+                                </div>
+                                <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="Email Address" className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded text-sm focus:ring-yellow-400 text-white" required />
+                                <select name="selectedTicket" value={`${formData.selectedTicket.type}-${formData.selectedTicket.price}`} onChange={handleTicketSelection} className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded text-sm text-gray-300 focus:ring-yellow-400" required>
+                                    <option value="">Select a Ticket</option>
+                                    {getTicketOptions().map(opt => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
+                                </select>
 
-                        {isProcessing ? (
-                            <button disabled className="w-full flex justify-center bg-yellow-500/50 text-black font-semibold py-2 rounded transition"><Loader2 className="animate-spin" />Processing...</button>
-                        ) : formData.selectedTicket.price > 0 ? (
-                            <button type="button" onClick={handlePaystackPayment} className="w-full bg-yellow-500 text-black font-semibold py-2 rounded hover:bg-yellow-400 transition">Proceed to Payment</button>
-                        ) : (
-                            <button type="button" onClick={handlePaymentSuccess} className="w-full bg-yellow-500 text-black font-semibold py-2 rounded hover:bg-yellow-400 transition">Get Free Ticket</button>
-                        )}
-                    </form>
-                </div>
-            </motion.div>
-        )}
-      </AnimatePresence>
+                                {isProcessing ? (
+                                    <button disabled className="w-full flex justify-center bg-yellow-500/50 text-black font-semibold py-2 rounded transition"><Loader2 className="animate-spin" />Processing...</button>
+                                ) : formData.selectedTicket.price > 0 ? (
+                                    <button type="button" onClick={handlePaystackPayment} className="w-full bg-yellow-500 text-black font-semibold py-2 rounded hover:bg-yellow-400 transition">Proceed to Payment</button>
+                                ) : (
+                                    <button type="button" onClick={handlePaymentSuccess} className="w-full bg-yellow-500 text-black font-semibold py-2 rounded hover:bg-yellow-400 transition">Get Free Ticket</button>
+                                )}
+                            </form>
+                        </div>
+                    </div>
+
+                    {/* Bottom Section: Location Map (Merged Here) */}
+                    <div className="relative z-10 max-w-6xl mx-auto px-4 mb-20 w-full">
+                         <div className="bg-[#1f1f1f] bg-opacity-95 p-6 rounded-lg shadow-2xl border-t-4 border-yellow-400">
+                            <h3 className="text-xl font-bold text-white mb-2 uppercase flex items-center gap-2">
+                                <MapPin className="text-yellow-400 w-5 h-5" /> Event Location
+                            </h3>
+                            <p className="text-gray-300 mb-6 ml-7 text-sm">{eventDetails.event_address}</p>
+
+                            <div className="w-full h-[400px] bg-[#121212] rounded-lg overflow-hidden relative border border-gray-800">
+                                {eventDetails.event_address ? (
+                                    <iframe
+                                        title="Event Location Map"
+                                        width="100%"
+                                        height="100%"
+                                        frameBorder="0"
+                                        scrolling="no"
+                                        marginHeight={0}
+                                        marginWidth={0}
+                                        loading="lazy"
+                                        referrerPolicy="no-referrer-when-downgrade"
+                                        // Optional: Add 'filter invert-[90%] hue-rotate-180' class for a hacked dark mode map if desired
+                                        className="w-full h-full"
+                                        src={`https://maps.google.com/maps?q=${encodeURIComponent(eventDetails.event_address)}&output=embed`}
+                                    />
+                                ) : (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
+                                        <MapPin className="w-12 h-12 mb-2 opacity-50" />
+                                        <p>No map address available</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+      </div>
     </section>
   );
 };

@@ -58,6 +58,8 @@ const EventCard = ({
     }
   };
 
+  const url = process.env.NEXT_PUBLIC_API_URL;
+
   const getButtonText = () => {
     if (status === 'past') return 'Event Ended';
     if (status === 'live') return 'Join Now';
@@ -75,7 +77,7 @@ const EventCard = ({
       <div className="relative w-full h-40">
         {getStatusBadge()}
         <img
-          src={image ? `https://app.echelontix.com.ng/${image}`: placeholderImg}
+          src={image ? `${url}${image}`: placeholderImg}
           alt={title}
           className="absolute inset-0 w-full h-full object-cover"
           onError={(e) => { (e.target as HTMLImageElement).src = placeholderImg }}

@@ -92,6 +92,8 @@ const EventCard = ({
     return 'Get Tickets';
   };
 
+  const base_url = process.env.NEXT_PUBLIC_API_URL;
+
   const placeholderImg = "https://placehold.co/400x300/1a1a1a/ffffff?text=Event";
 
   return (
@@ -103,7 +105,7 @@ const EventCard = ({
       <div className="relative w-full h-40">
         {getStatusBadge()}
         <img
-          src={image ? `https://app.echelontix.com.ng/${image}` : placeholderImg}
+          src={image ? `${base_url}${image}` : placeholderImg}
           alt={title}
           className="absolute inset-0 w-full h-full object-cover"
           onError={(e) => { (e.target as HTMLImageElement).src = placeholderImg }}
