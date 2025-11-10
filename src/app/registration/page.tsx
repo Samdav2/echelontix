@@ -291,10 +291,12 @@ const EventForm: React.FC = () => {
                     </div>
                 </motion.div>
             ) : (
-                <motion.div key="form" initial={{opacity: 0}} animate={{opacity: 1}} className="flex flex-col">
-                    {/* Top Section: Details & Form */}
-                    <div className="relative z-10 max-w-6xl mx-auto px-4 pt-20 pb-10 flex flex-col lg:flex-row gap-10 items-start lg:items-center justify-between w-full">
-                        <div className="text-white max-w-lg space-y-6">
+                <motion.div key="form" initial={{opacity: 0}} animate={{opacity: 1}}>
+                    {/* Unified Grid Container for Details, Form, and Map */}
+                    <div className="relative z-10 max-w-6xl mx-auto px-4 pt-20 pb-20 w-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-start">
+
+                        {/* 1. Event Details (Order 1 on Mobile, Col 1 Row 1 on Desktop) */}
+                        <div className="text-white max-w-lg space-y-6 order-1 lg:col-start-1 lg:row-start-1">
                             <img src={`${url}${eventDetails.picture}`} alt={eventDetails.event_name} className="w-full sm:w-80 border-4 border-yellow-400 rounded-lg shadow-lg" />
                             <div className="space-y-2">
                                 <p className="text-4xl font-extrabold">{formattedDate.day}<span className="text-lg block font-semibold">{formattedDate.month} {formattedDate.year}</span></p>
@@ -303,7 +305,40 @@ const EventForm: React.FC = () => {
                                 <div className="mt-4"><p className="font-semibold">Event Summary</p><p className="text-sm">{eventDetails.summary}</p></div>
                             </div>
                         </div>
-                        <div className="bg-[#1f1f1f] bg-opacity-90 p-8 rounded-lg shadow-2xl w-full max-w-md border-t-4 border-yellow-400">
+
+                        {/* 2. Event Map (Order 2 on Mobile, Col span 2 Row 2 on Desktop) */}
+                         <div className="bg-[#1f1f1f] bg-opacity-95 p-6 rounded-lg shadow-2xl border-t-4 border-yellow-400 w-full order-2 lg:col-span-2 lg:row-start-2">
+                            <h3 className="text-xl font-bold text-white mb-2 uppercase flex items-center gap-2">
+                                <MapPin className="text-yellow-400 w-5 h-5" /> Event Location
+                            </h3>
+                            <p className="text-gray-300 mb-6 ml-7 text-sm">{eventDetails.event_address}</p>
+
+                            <div className="w-full h-[300px] lg:h-[400px] bg-[#121212] rounded-lg overflow-hidden relative border border-gray-800">
+                                {eventDetails.event_address ? (
+                                    <iframe
+                                        title="Event Location Map"
+                                        width="100%"
+                                        height="100%"
+                                        frameBorder="0"
+                                        scrolling="no"
+                                        marginHeight={0}
+                                        marginWidth={0}
+                                        loading="lazy"
+                                        referrerPolicy="no-referrer-when-downgrade"
+                                        className="w-full h-full"
+                                        src={`https://maps.google.com/maps?q=${encodeURIComponent(eventDetails.event_address)}&output=embed`}
+                                    />
+                                ) : (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
+                                        <MapPin className="w-12 h-12 mb-2 opacity-50" />
+                                        <p>No map address available</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* 3. Registration Form (Order 3 on Mobile, Col 2 Row 1 on Desktop) */}
+                        <div className="bg-[#1f1f1f] bg-opacity-90 p-6 rounded-lg shadow-2xl w-full max-w-md border-t-4 border-yellow-400 mx-auto lg:mx-0 order-3 lg:col-start-2 lg:row-start-1 lg:justify-self-end">
                             <h2 className="text-xl font-bold text-center uppercase mb-1">{eventDetails.event_name}</h2>
                             <p className="text-sm text-center text-gray-300 mb-6">Attendee Information</p>
                             <form className="space-y-4">
@@ -326,40 +361,7 @@ const EventForm: React.FC = () => {
                                 )}
                             </form>
                         </div>
-                    </div>
 
-                    {/* Bottom Section: Location Map (Merged Here) */}
-                    <div className="relative z-10 max-w-6xl mx-auto px-4 mb-20 w-full">
-                         <div className="bg-[#1f1f1f] bg-opacity-95 p-6 rounded-lg shadow-2xl border-t-4 border-yellow-400">
-                            <h3 className="text-xl font-bold text-white mb-2 uppercase flex items-center gap-2">
-                                <MapPin className="text-yellow-400 w-5 h-5" /> Event Location
-                            </h3>
-                            <p className="text-gray-300 mb-6 ml-7 text-sm">{eventDetails.event_address}</p>
-
-                            <div className="w-full h-[400px] bg-[#121212] rounded-lg overflow-hidden relative border border-gray-800">
-                                {eventDetails.event_address ? (
-                                    <iframe
-                                        title="Event Location Map"
-                                        width="100%"
-                                        height="100%"
-                                        frameBorder="0"
-                                        scrolling="no"
-                                        marginHeight={0}
-                                        marginWidth={0}
-                                        loading="lazy"
-                                        referrerPolicy="no-referrer-when-downgrade"
-                                        // Optional: Add 'filter invert-[90%] hue-rotate-180' class for a hacked dark mode map if desired
-                                        className="w-full h-full"
-                                        src={`https://maps.google.com/maps?q=${encodeURIComponent(eventDetails.event_address)}&output=embed`}
-                                    />
-                                ) : (
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
-                                        <MapPin className="w-12 h-12 mb-2 opacity-50" />
-                                        <p>No map address available</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
                     </div>
                 </motion.div>
             )}
