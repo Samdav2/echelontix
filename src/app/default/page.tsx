@@ -89,7 +89,7 @@ const Home: React.FC = () => {
               <Star className="text-yellow-400 fill-yellow-400" /> Featured Events
             </h2>
             <div className="flex gap-2">
-               <button onClick={prevSlide} className="p-2 rounded-full border border-zinc-700 hover:bg-yellow-400 hover:text-black hover:border-yellow-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled={currentIndex === 0}>
+              <button onClick={prevSlide} className="p-2 rounded-full border border-zinc-700 hover:bg-yellow-400 hover:text-black hover:border-yellow-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled={currentIndex === 0}>
                 <ChevronLeft size={24} />
               </button>
               <button onClick={nextSlide} className="p-2 rounded-full border border-zinc-700 hover:bg-yellow-400 hover:text-black hover:border-yellow-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled={currentIndex >= featuredEvents.length - itemsPerPage}>
@@ -120,10 +120,10 @@ const Home: React.FC = () => {
                       <h3 className="text-xl font-bold text-white mb-2 drop-shadow-md">{event.name}</h3>
                       <div className="flex flex-col gap-1 text-sm text-zinc-300">
                         <div className="flex items-center gap-2">
-                          <Calendar size={14} className="text-yellow-400"/> {event.date}
+                          <Calendar size={14} className="text-yellow-400" /> {event.date}
                         </div>
                         <div className="flex items-center gap-2">
-                          <MapPin size={14} className="text-yellow-400"/> {event.location}
+                          <MapPin size={14} className="text-yellow-400" /> {event.location}
                         </div>
                       </div>
                     </div>
@@ -137,8 +137,8 @@ const Home: React.FC = () => {
 
 
       {/* === CREATE / NOMINATE SECTION === */}
-      <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12 space-y-4">
+      <section className="py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-6 space-y-4">
           <h2 className="text-4xl font-bold">Bring Your Vision to Life</h2>
           <p className="text-zinc-400 max-w-xl mx-auto">
             Whether it's a massive concert or an exclusive voting event, we have the tools you need.
@@ -163,8 +163,8 @@ const Home: React.FC = () => {
             </div>
           </div>
 
-           {/* Create Nomination Card */}
-           <div className="group relative bg-zinc-900 rounded-3xl p-1 overflow-hidden hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-300">
+          {/* Create Nomination Card */}
+          <div className="group relative bg-zinc-900 rounded-3xl p-1 overflow-hidden hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-300">
             <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="relative h-full bg-zinc-950 rounded-[22px] p-8 flex flex-col items-start border border-zinc-800 group-hover:border-purple-500/50 transition-colors">
               <div className="p-4 bg-purple-500/10 text-purple-400 rounded-2xl mb-6">
@@ -173,6 +173,9 @@ const Home: React.FC = () => {
               <h3 className="text-2xl font-bold mb-2">Create Nomination Link</h3>
               <p className="text-zinc-400 mb-8 flex-grow">
                 Allow your community to nominate and vote for their favorites seamlessly.
+              </p>
+              <p className="text-red-500/50">
+                Coming Soon!!!
               </p>
               <button className="flex items-center gap-2 text-sm font-bold text-purple-400 hover:gap-4 transition-all">
                 Create Link <ChevronRight size={16} />
@@ -184,16 +187,16 @@ const Home: React.FC = () => {
 
 
       {/* === UPCOMING EVENTS GRID === */}
-      <section className="py-16 bg-zinc-900">
+      <section className="py-8 bg-zinc-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-10">
+          <div className="flex items-center justify-between mb-5">
             <h2 className="text-3xl font-bold">Upcoming Events</h2>
             <button className="hidden sm:flex px-6 py-2 rounded-full border border-zinc-700 hover:bg-zinc-800 transition-colors text-sm font-medium">
               View All
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
             {upcomingEvents.map((event) => (
               <div key={event.id} className="group bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden hover:border-yellow-400/50 transition-all duration-300 hover:-translate-y-1">
                 <div className="aspect-[4/3] overflow-hidden">
@@ -203,11 +206,11 @@ const Home: React.FC = () => {
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                 </div>
-                <div className="p-5">
-                  <h3 className="font-bold text-lg line-clamp-2 mb-2 leading-tight min-h-[3rem]">
+                <div className="p-3 sm:p-5">
+                  <h3 className="font-bold text-sm sm:text-lg line-clamp-2 mb-1 sm:mb-2 leading-tight min-h-[2.5rem] sm:min-h-[3rem]">
                     {event.name}
                   </h3>
-                  <p className="text-yellow-400 font-medium text-sm">
+                  <p className="text-yellow-400 font-medium text-xs sm:text-sm">
                     {event.price}
                   </p>
                 </div>
@@ -225,7 +228,7 @@ const Home: React.FC = () => {
 
 
       {/* === CALL TO ACTION & SUBSCRIBE === */}
-      <section className="py-24 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-24">
+      <section className="py-16 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-24">
         {/* Join Us Banner */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-yellow-400 to-yellow-600 p-8 md:p-12 text-black text-center lg:text-left flex flex-col lg:flex-row items-center justify-between gap-8">
           <div className="space-y-4 max-w-lg">
@@ -244,7 +247,7 @@ const Home: React.FC = () => {
         {/* Subscribe Form */}
         <div className="text-center space-y-8 max-w-md mx-auto">
           <div className="space-y-3">
-             <Mail size={40} className="mx-auto text-zinc-500 mb-4" />
+            <Mail size={40} className="mx-auto text-zinc-500 mb-4" />
             <h2 className="text-3xl font-bold">Stay Updated</h2>
             <p className="text-zinc-400">
               Get exclusive event alerts and early-bird offers straight to your inbox.

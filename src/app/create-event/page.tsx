@@ -3,27 +3,43 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import {
+    Calendar,
+    Clock,
+    MapPin,
+    AlignLeft,
+    Image as ImageIcon,
+    DollarSign,
+    Users,
+    Plus,
+    Trash2,
+    CreditCard,
+    CheckCircle2,
+    ChevronRight,
+    ChevronLeft,
+    Ticket
+} from 'lucide-react';
 
 // --- Helper Components ---
 const Alert: React.FC<{ message: string; type: 'success' | 'error' | 'info' }> = ({ message, type }) => {
     if (!message) return null;
     const alertStyles = {
-        success: 'bg-green-100 text-green-800',
-        error: 'bg-red-100 text-red-800',
-        info: 'bg-blue-100 text-blue-800',
+        success: 'bg-green-500/10 text-green-400 border border-green-500/20',
+        error: 'bg-red-500/10 text-red-400 border border-red-500/20',
+        info: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',
     };
     return (
-        <div className={`p-4 rounded-md text-center font-medium ${alertStyles[type]}`}>
+        <div className={`p-4 rounded-xl text-center font-medium ${alertStyles[type]} mb-6`}>
             {message}
         </div>
     );
 };
 
 // --- Type Definitions ---
-interface Table {
-    tableName: string;
-    tablePrice: string;
-    tableCapacity: string;
+interface CustomTicket {
+    name: string;
+    price: string;
+    capacity: string;
 }
 
 interface EventDetails {
@@ -35,23 +51,18 @@ interface EventDetails {
     eventAddress: string;
     summary: string;
     picture: File | null;
-    vip: string;
-    vvip: string;
-    price: string;
     category: string;
     account_name: string;
     account_number: string;
     bank: string;
+    // Legacy fields for API compatibility if needed, though we prefer dynamic tickets
+    vip: string;
+    vvip: string;
+    price: string;
     vvvip_price: string;
 }
 
-interface CustomTicket {
-  name: string;
-  quantity: string;
-  price: string;
-}
-
-// --- Bank List and Code Mapping Constants ---
+// --- Bank List ---
 const bankCodeMapping: { [key: string]: string } = {
     '9MOBILE 9PAYMENT SERVICE BANK': '120001', 'ABBEY MORTGAGE BANK': '801', 'ABOVE ONLY MFB': '51204',
     'ABULESORO MFB': '51312', 'ACCESS BANK': '044', 'ACCESS BANK (DIAMOND)': '063', 'AIRTEL SMARTCASH PSB': '120004',
@@ -79,10 +90,9 @@ const bankCodeMapping: { [key: string]: string } = {
 };
 const bankList = Object.keys(bankCodeMapping);
 
-
-// --- Main Page Component ---
 const CreateEventPage: React.FC = () => {
     const router = useRouter();
+    const [currentStep, setCurrentStep] = useState(1);
     const [isFree, setIsFree] = useState(false);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -91,12 +101,13 @@ const CreateEventPage: React.FC = () => {
 
     const [eventDetails, setEventDetails] = useState<EventDetails>({
         brand_name: "", eventName: "", date: "", timeIn: "", timeOut: "", eventAddress: "", summary: "",
-        picture: null, vip: "0", vvip: "0", price: "0", category: "", account_name: "",
-        account_number: "", bank: "", vvvip_price: "0"
+        picture: null, category: "", account_name: "", account_number: "", bank: "",
+        vip: "0", vvip: "0", price: "0", vvvip_price: "0"
     });
 
-  
-    const [tables, setTables] = useState<Table[]>([]);
+    const [tickets, setTickets] = useState<CustomTicket[]>([
+        { name: 'Regular', price: '', capacity: '100' }
+    ]);
 
     useEffect(() => {
         setIsClient(true);
@@ -126,34 +137,43 @@ const CreateEventPage: React.FC = () => {
         }
     };
 
-    const handleFreeEventToggle = (e: ChangeEvent<HTMLInputElement>) => {
-        const isChecked = e.target.checked;
-        setIsFree(isChecked);
-        if (isChecked) {
-            setEventDetails(prev => ({ ...prev, price: "0", vip: "0", vvip: "0", vvvip_price: "0" }));
-            setTables([]);
+    // --- Ticket Management ---
+    const addTicket = () => {
+        setTickets([...tickets, { name: '', price: '', capacity: '100' }]);
+    };
+
+    const removeTicket = (index: number) => {
+        if (tickets.length > 1) {
+            const newTickets = tickets.filter((_, i) => i !== index);
+            setTickets(newTickets);
         }
     };
 
-    // --- Table Management Functions ---
-    const addTable = () => {
-        setTables([...tables, { tableName: '', tablePrice: '', tableCapacity: '' }]);
+    const handleTicketChange = (index: number, field: keyof CustomTicket, value: string) => {
+        const newTickets = [...tickets];
+        newTickets[index] = { ...newTickets[index], [field]: value };
+        setTickets(newTickets);
     };
 
-    const removeTable = (index: number) => {
-        const newTables = tables.filter((_, i) => i !== index);
-        setTables(newTables);
+    const handleFreeEventToggle = (e: ChangeEvent<HTMLInputElement>) => {
+        setIsFree(e.target.checked);
+        if (e.target.checked) {
+            setTickets([{ name: 'Free Entry', price: '0', capacity: '100' }]);
+        } else {
+            setTickets([{ name: 'Regular', price: '', capacity: '100' }]);
+        }
     };
 
-    const handleTableChange = (index: number, e: ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        const newTables = [...tables];
-        newTables[index] = { ...newTables[index], [name]: value };
-        setTables(newTables);
+    // --- Navigation ---
+    const nextStep = () => {
+        if (currentStep < 3) setCurrentStep(prev => prev + 1);
     };
-    // --- End Table Management ---
 
+    const prevStep = () => {
+        if (currentStep > 1) setCurrentStep(prev => prev - 1);
+    };
 
+    // --- Submission ---
     const handleSubaccountSetup = async () => {
         setFeedback({ message: "Verifying payout details with Paystack...", type: 'info' });
         const bankCode = bankCodeMapping[eventDetails.bank.toUpperCase()];
@@ -175,24 +195,27 @@ const CreateEventPage: React.FC = () => {
         }
     };
 
-    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
         setFeedback(null);
 
         try {
-            // Step 1: Handle subaccount setup if the event is not free
             if (!isFree) {
                 await handleSubaccountSetup();
             }
 
-            // Step 2: Create the tables via the new, separate API endpoint, if any tables exist
-            if (!isFree && tables.length > 0) {
-                setFeedback({ message: "Creating event tables...", type: 'info' });
-                const tablesPayload = tables.map(table => ({
-                    tableName: table.tableName,
-                    tablePrice: parseInt(table.tablePrice, 10) || 0,
-                    tableCapacity: parseInt(table.tableCapacity, 10) || 0,
+            // Map tickets to legacy fields for API compatibility if needed
+            // We'll use the first ticket as 'price' (Regular), and others as tables or special categories
+            // For now, we'll send the tickets as 'tables' to the table creation endpoint as requested
+
+            // 1. Create Tables (Tickets)
+            if (tickets.length > 0) {
+                setFeedback({ message: "Creating ticket types...", type: 'info' });
+                const tablesPayload = tickets.map(ticket => ({
+                    tableName: ticket.name,
+                    tablePrice: parseInt(ticket.price, 10) || 0,
+                    tableCapacity: parseInt(ticket.capacity, 10) || 0,
                 }));
 
                 const tableApiPayload = {
@@ -200,164 +223,387 @@ const CreateEventPage: React.FC = () => {
                     tables: tablesPayload
                 };
 
-                const url = process.env.NEXT_PUBLIC_API_URL
-                const createTablesUrl = `${url}event/tableCreation`
-                await axios.post(createTablesUrl, tableApiPayload, {
+                const url = process.env.NEXT_PUBLIC_API_URL;
+                await axios.post(`${url}event/tableCreation`, tableApiPayload, {
                     headers: { "Content-Type": "application/json" },
                 });
             }
 
-            // Step 3: Create the main event
-            setFeedback({ message: "Creating your event...", type: 'info' });
+            // 2. Create Event
+            setFeedback({ message: "Finalizing event...", type: 'info' });
             const formDataToSend = new FormData();
 
-            // Append all eventDetails. The 'tables' data is no longer part of this form.
-            Object.entries(eventDetails).forEach(([key, value]) => {
+            // Map the first ticket price to the main price field for display purposes
+            const mainPrice = tickets.length > 0 ? tickets[0].price : "0";
+
+            const payload = {
+                ...eventDetails,
+                price: mainPrice,
+                vip: "0", // Deprecated in favor of dynamic tickets
+                vvip: "0",
+                vvvip_price: "0"
+            };
+
+            Object.entries(payload).forEach(([key, value]) => {
                 if (value !== null) {
-                    formDataToSend.append(key, value);
+                    formDataToSend.append(key, value as string | Blob);
                 }
             });
-            const url = process.env.NEXT_PUBLIC_API_URL
-            const createEventUrl = `${url}event/event`
-            await axios.post(createEventUrl, formDataToSend, {
+
+            const url = process.env.NEXT_PUBLIC_API_URL;
+            await axios.post(`${url}event/event`, formDataToSend, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
 
-            // Step 4: Final feedback and redirection
-            setFeedback({ message: "Event and tables created successfully! Redirecting...", type: 'success' });
+            setFeedback({ message: "Event created successfully! Redirecting...", type: 'success' });
             setTimeout(() => router.push('/dashboard/creator'), 2000);
 
         } catch (error) {
-            const errorMessage = (error as any).response?.data?.message || (error as Error).message || "An error occurred during event creation.";
+            const errorMessage = (error as any).response?.data?.message || (error as Error).message || "An error occurred.";
             setFeedback({ message: errorMessage, type: 'error' });
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    if (!isClient) {
-        return (
-             <div className="min-h-screen bg-black flex items-center justify-center text-white">
-                Loading...
-            </div>
-        );
-    }
+    if (!isClient) return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>;
 
     return (
-        <div className="min-h-screen bg-cover bg-center text-white p-4 md:p-10" style={{ backgroundImage: "url('/party.jpeg')" }}>
-            <div className="max-w-2xl mx-auto bg-black bg-opacity-85 p-6 rounded-lg border border-yellow-400 shadow-lg">
-                <h2 className="text-center text-yellow-400 text-2xl font-bold mb-6">Create New Event</h2>
-
-                <form className="space-y-4" onSubmit={handleSubmit}>
-                    {/* Event Details */}
-                    <input type="text" name="eventName" value={eventDetails.eventName} onChange={handleChange} placeholder="Event Name" required className="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400" />
-                    <input type="date" name="date" value={eventDetails.date} onChange={handleChange} required className="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400" />
-                    <div className="grid grid-cols-2 gap-4">
-                        <div><label className="text-sm mb-1 block">Time-in</label><input type="time" name="timeIn" value={eventDetails.timeIn} onChange={handleChange} required className="w-full p-3 rounded bg-gray-800 text-white" /></div>
-                        <div><label className="text-sm mb-1 block">Time-out</label><input type="time" name="timeOut" value={eventDetails.timeOut} onChange={handleChange} required className="w-full p-3 rounded bg-gray-800 text-white" /></div>
+        <div className="min-h-screen bg-zinc-950 text-white selection:bg-yellow-500/30 flex flex-col">
+            {/* Header */}
+            <div className="border-b border-zinc-800 bg-black/50 backdrop-blur-md sticky top-0 z-50">
+                <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+                    <h1 className="text-xl font-bold text-yellow-400">Create Event</h1>
+                    <div className="flex items-center gap-2 text-sm text-zinc-400">
+                        Step <span className="text-white font-bold">{currentStep}</span> of 3
                     </div>
-                    <input type="text" name="eventAddress" value={eventDetails.eventAddress} onChange={handleChange} placeholder="Event Location" required className="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400" />
-                    <textarea name="summary" value={eventDetails.summary} onChange={handleChange} rows={3} placeholder="Event Summary (max 300 chars)" maxLength={300} className="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400" />
-                    <select name="category" value={eventDetails.category} onChange={handleChange} required className="w-full p-3 rounded bg-gray-800 text-white">
-                        <option value="">Select Category</option>
-                        <option value="Music">Music</option><option value="Sports">Sports</option><option value="Tech">Tech</option><option value="Art">Art</option><option value="Other">Other</option>
-                    </select>
+                </div>
+                {/* Progress Bar */}
+                <div className="h-1 bg-zinc-900 w-full">
+                    <div
+                        className="h-full bg-yellow-400 transition-all duration-500 ease-out"
+                        style={{ width: `${(currentStep / 3) * 100}%` }}
+                    />
+                </div>
+            </div>
 
-                    {/* Pricing Section */}
-                    <div className="border-t border-gray-700 pt-4">
-                        <label className="flex items-center gap-3 cursor-pointer"><input type="checkbox" checked={isFree} onChange={handleFreeEventToggle} className="form-checkbox accent-yellow-400 h-5 w-5 bg-gray-700 border-gray-600" /><span>Mark this event as FREE</span></label>
-                    </div>
+            <div className="flex-1 max-w-4xl mx-auto w-full p-6 md:py-12">
+                <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
 
-                    {!isFree && (
-                        <div className="space-y-4 pt-2">
-                             <h3 className="text-yellow-400 text-lg font-semibold">Ticket Prices</h3>
-                             <h4 className="text-yellow-400 text-lg font-semibold">Regular</h4>
-                             <input type="number" name="price" value={eventDetails.price} onChange={handleChange} placeholder="Regular Price (₦)" min="0" className="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400" />
-                             <h4 className="text-yellow-400 text-lg font-semibold">VIP</h4>
-                             <input type="number" name="vip" value={eventDetails.vip} onChange={handleChange} placeholder="VIP Price (₦)" min="0" className="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400" />
-                             <h4 className="text-yellow-400 text-lg font-semibold">VVIP</h4>
-                             <input type="number" name="vvip" value={eventDetails.vvip} onChange={handleChange} placeholder="VVIP Price (₦)" min="0" className="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400" />
-                             <h4 className="text-yellow-400 text-lg font-semibold">VVVIP</h4>
-                             <input type="number" name="vvvip_price" value={eventDetails.vvvip_price} onChange={handleChange} placeholder="VVVIP Price (₦)" min="0" className="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400" /> 
+                    {/* --- STEP 1: EVENT DETAILS --- */}
+                    {currentStep === 1 && (
+                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="text-center mb-8">
+                                <h2 className="text-3xl font-bold mb-2">Event Details</h2>
+                                <p className="text-zinc-400">Tell us about your upcoming event.</p>
+                            </div>
 
-                             {/* --- Dynamic Table Section --- */}
-                            <div className="border-t border-gray-700 pt-4">
-                                <div className="flex justify-between items-center mb-2">
-                                    <h3 className="text-yellow-400 text-lg font-semibold">Table Details</h3>
-                                    <button type="button" onClick={addTable} className="bg-yellow-400 text-black font-bold py-1 px-3 rounded hover:bg-yellow-500 transition text-sm">
-                                        + Add Table
-                                    </button>
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                                        <AlignLeft size={16} /> Event Name
+                                    </label>
+                                    <input
+                                        type="text" name="eventName" value={eventDetails.eventName} onChange={handleChange}
+                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all"
+                                        placeholder="e.g. Summer Vibes 2025"
+                                    />
                                 </div>
-                                {tables.map((table, index) => (
-                                    <div key={index} className="p-3 bg-gray-900 rounded-md mb-3 border border-gray-700 space-y-3">
-                                        <div className="flex justify-between items-center">
-                                            <p className="font-semibold text-gray-300">Table {index + 1}</p>
-                                            <button type="button" onClick={() => removeTable(index)} className="text-red-500 hover:text-red-400 font-bold text-xl">&times;</button>
-                                        </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                                        <Calendar size={16} /> Date
+                                    </label>
+                                    <input
+                                        type="date" name="date" value={eventDetails.date} onChange={handleChange}
+                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                                        <Clock size={16} /> Start Time
+                                    </label>
+                                    <input
+                                        type="time" name="timeIn" value={eventDetails.timeIn} onChange={handleChange}
+                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                                        <Clock size={16} /> End Time
+                                    </label>
+                                    <input
+                                        type="time" name="timeOut" value={eventDetails.timeOut} onChange={handleChange}
+                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                                    <MapPin size={16} /> Location
+                                </label>
+                                <input
+                                    type="text" name="eventAddress" value={eventDetails.eventAddress} onChange={handleChange}
+                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all"
+                                    placeholder="Full address of the venue"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-zinc-300">Description</label>
+                                <textarea
+                                    name="summary" value={eventDetails.summary} onChange={handleChange} rows={4} maxLength={300}
+                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all resize-none"
+                                    placeholder="What's this event about?"
+                                />
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-zinc-300">Category</label>
+                                    <select
+                                        name="category" value={eventDetails.category} onChange={handleChange}
+                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all appearance-none"
+                                    >
+                                        <option value="">Select Category</option>
+                                        <option value="Music">Music</option>
+                                        <option value="Sports">Sports</option>
+                                        <option value="Tech">Tech</option>
+                                        <option value="Art">Art</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                                        <ImageIcon size={16} /> Cover Image
+                                    </label>
+                                    <div className="relative">
                                         <input
-                                            type="text"
-                                            name="tableName"
-                                            value={table.tableName}
-                                            onChange={(e) => handleTableChange(index, e)}
-                                            placeholder="Table Name (e.g., Gold Table)"
-                                            required
-                                            className="w-full p-2 rounded bg-gray-800 text-white placeholder-gray-500"
+                                            type="file" accept="image/*" onChange={handleImageChange}
+                                            className="hidden" id="imageUpload"
                                         />
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <input
-                                                type="number"
-                                                name="tablePrice"
-                                                value={table.tablePrice}
-                                                onChange={(e) => handleTableChange(index, e)}
-                                                placeholder="Price (₦)"
-                                                min="0"
-                                                required
-                                                className="w-full p-2 rounded bg-gray-800 text-white placeholder-gray-500"
-                                            />
-                                            <input
-                                                type="number"
-                                                name="tableCapacity"
-                                                value={table.tableCapacity}
-                                                onChange={(e) => handleTableChange(index, e)}
-                                                placeholder="Capacity"
-                                                min="1"
-                                                required
-                                                className="w-full p-2 rounded bg-gray-800 text-white placeholder-gray-500"
-                                            />
+                                        <label
+                                            htmlFor="imageUpload"
+                                            className="w-full bg-zinc-900 border border-dashed border-zinc-700 rounded-xl p-4 flex items-center justify-center cursor-pointer hover:border-yellow-400 hover:bg-zinc-800 transition-all h-[58px]"
+                                        >
+                                            {eventDetails.picture ? (
+                                                <span className="text-yellow-400 font-medium truncate px-4">{eventDetails.picture.name}</span>
+                                            ) : (
+                                                <span className="text-zinc-500">Click to upload image</span>
+                                            )}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {imagePreview && (
+                                <div className="relative h-48 w-full rounded-xl overflow-hidden border border-zinc-800">
+                                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* --- STEP 2: TICKET DETAILS --- */}
+                    {currentStep === 2 && (
+                        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="text-center mb-8">
+                                <h2 className="text-3xl font-bold mb-2">Ticket Setup</h2>
+                                <p className="text-zinc-400">Define your ticket types and pricing.</p>
+                            </div>
+
+                            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+                                <label className="flex items-center gap-3 cursor-pointer">
+                                    <div className="relative">
+                                        <input
+                                            type="checkbox" checked={isFree} onChange={handleFreeEventToggle}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-400/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-400"></div>
+                                    </div>
+                                    <span className="font-medium text-white">This is a free event</span>
+                                </label>
+                            </div>
+
+                            <div className="space-y-4">
+                                {tickets.map((ticket, index) => (
+                                    <div key={index} className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 relative group hover:border-yellow-400/30 transition-all">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="font-bold text-lg flex items-center gap-2">
+                                                <Ticket size={18} className="text-yellow-400" />
+                                                Ticket Type {index + 1}
+                                            </h3>
+                                            {tickets.length > 1 && (
+                                                <button
+                                                    onClick={() => removeTicket(index)}
+                                                    className="text-zinc-500 hover:text-red-500 transition-colors p-2"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        <div className="grid md:grid-cols-3 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-medium text-zinc-400 uppercase">Ticket Name</label>
+                                                <input
+                                                    type="text"
+                                                    value={ticket.name}
+                                                    onChange={(e) => handleTicketChange(index, 'name', e.target.value)}
+                                                    placeholder="e.g. Regular, VIP"
+                                                    className="w-full bg-black border border-zinc-700 rounded-lg p-3 focus:ring-1 focus:ring-yellow-400 outline-none"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-medium text-zinc-400 uppercase">Price (₦)</label>
+                                                <input
+                                                    type="number"
+                                                    value={ticket.price}
+                                                    onChange={(e) => handleTicketChange(index, 'price', e.target.value)}
+                                                    disabled={isFree}
+                                                    placeholder="0.00"
+                                                    className="w-full bg-black border border-zinc-700 rounded-lg p-3 focus:ring-1 focus:ring-yellow-400 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-medium text-zinc-400 uppercase">Capacity</label>
+                                                <input
+                                                    type="number"
+                                                    value={ticket.capacity}
+                                                    onChange={(e) => handleTicketChange(index, 'capacity', e.target.value)}
+                                                    className="w-full bg-black border border-zinc-700 rounded-lg p-3 focus:ring-1 focus:ring-yellow-400 outline-none"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
+
+                                {!isFree && (
+                                    <button
+                                        onClick={addTicket}
+                                        className="w-full py-4 border border-dashed border-zinc-700 rounded-xl text-zinc-400 hover:text-yellow-400 hover:border-yellow-400 hover:bg-yellow-400/5 transition-all flex items-center justify-center gap-2 font-medium"
+                                    >
+                                        <Plus size={20} /> Add Another Ticket Type
+                                    </button>
+                                )}
                             </div>
-                             {/* --- End Dynamic Table Section --- */}
                         </div>
                     )}
 
-                    {/* Payout Details */}
-                    {!isFree && (
-                        <div className="pt-4 border-t border-gray-700">
-                            <h4 className="text-yellow-400 font-semibold mb-2">Payout Account Details</h4>
-                            <small className="text-xs text-gray-400 block mb-2">Earnings will be sent here after the event.</small>
-                            <input type="text" name="account_name" value={eventDetails.account_name} onChange={handleChange} placeholder="Account Name" required={!isFree} className="w-full mb-3 p-3 rounded bg-gray-800 text-white placeholder-gray-400" />
-                            <input type="text" name="account_number" value={eventDetails.account_number} onChange={handleChange} placeholder="Account Number" required={!isFree} pattern="\d{10}" title="Enter a valid 10-digit account number" className="w-full mb-3 p-3 rounded bg-gray-800 text-white placeholder-gray-400" />
-                            <select name="bank" value={eventDetails.bank} onChange={handleChange} required={!isFree} className="w-full mb-3 p-3 rounded bg-gray-800 text-white">
-                                <option value="">Select Bank</option>
-                                {bankList.map(bank => <option key={bank} value={bank}>{bank}</option>)}
-                            </select>
+                    {/* --- STEP 3: PAYOUT & REVIEW --- */}
+                    {currentStep === 3 && (
+                        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="text-center mb-8">
+                                <h2 className="text-3xl font-bold mb-2">Finalize</h2>
+                                <p className="text-zinc-400">Set up payouts and launch your event.</p>
+                            </div>
+
+                            {!isFree ? (
+                                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 space-y-6">
+                                    <div className="flex items-center gap-3 text-yellow-400 mb-2">
+                                        <CreditCard size={24} />
+                                        <h3 className="text-xl font-bold">Payout Details</h3>
+                                    </div>
+                                    <p className="text-sm text-zinc-400">
+                                        Where should we send your ticket sales earnings?
+                                    </p>
+
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium text-zinc-300">Bank Name</label>
+                                            <select
+                                                name="bank" value={eventDetails.bank} onChange={handleChange}
+                                                className="w-full bg-black border border-zinc-700 rounded-lg p-4 focus:ring-1 focus:ring-yellow-400 outline-none"
+                                            >
+                                                <option value="">Select Bank</option>
+                                                {bankList.map(bank => <option key={bank} value={bank}>{bank}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium text-zinc-300">Account Number</label>
+                                            <input
+                                                type="text" name="account_number" value={eventDetails.account_number} onChange={handleChange}
+                                                placeholder="0123456789" maxLength={10}
+                                                className="w-full bg-black border border-zinc-700 rounded-lg p-4 focus:ring-1 focus:ring-yellow-400 outline-none"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium text-zinc-300">Account Name</label>
+                                            <input
+                                                type="text" name="account_name" value={eventDetails.account_name} onChange={handleChange}
+                                                placeholder="Account Holder Name"
+                                                className="w-full bg-black border border-zinc-700 rounded-lg p-4 focus:ring-1 focus:ring-yellow-400 outline-none"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-8 text-center">
+                                    <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <CheckCircle2 size={32} className="text-green-500" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white mb-2">Free Event</h3>
+                                    <p className="text-zinc-400">
+                                        No payout details required. You're ready to launch!
+                                    </p>
+                                </div>
+                            )}
+
+                            <div className="bg-zinc-900/30 border border-zinc-800 rounded-xl p-6">
+                                <h3 className="font-bold text-white mb-4">Summary</h3>
+                                <div className="space-y-2 text-sm text-zinc-400">
+                                    <div className="flex justify-between">
+                                        <span>Event</span>
+                                        <span className="text-white">{eventDetails.eventName || 'Untitled'}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Date</span>
+                                        <span className="text-white">{eventDetails.date || 'Not set'}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Tickets</span>
+                                        <span className="text-white">{tickets.length} types</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
 
-                    {/* Image Upload */}
-                    <div>
-                        <label className="block text-sm font-medium text-yellow-400 mb-2">Upload Event Image</label>
-                        <input type="file" accept="image/*" onChange={handleImageChange} className="w-full text-white file:bg-yellow-400 file:text-black file:font-semibold file:rounded file:px-3 file:py-2 file:border-0 bg-gray-800 rounded" />
-                        {imagePreview && <img src={imagePreview} alt="Event Preview" className="mt-3 rounded-lg border border-gray-600 max-h-64 object-cover w-full" />}
+                    {/* --- FEEDBACK ALERT --- */}
+                    {feedback && <Alert message={feedback.message} type={feedback.type} />}
+
+                    {/* --- NAVIGATION BUTTONS --- */}
+                    <div className="flex items-center gap-4 pt-4">
+                        {currentStep > 1 && (
+                            <button
+                                onClick={prevStep}
+                                className="flex-1 py-4 rounded-xl border border-zinc-700 font-bold hover:bg-zinc-800 transition-all flex items-center justify-center gap-2"
+                            >
+                                <ChevronLeft size={20} /> Back
+                            </button>
+                        )}
+
+                        {currentStep < 3 ? (
+                            <button
+                                onClick={nextStep}
+                                className="flex-1 bg-yellow-400 text-black py-4 rounded-xl font-bold hover:bg-yellow-300 transition-all flex items-center justify-center gap-2"
+                            >
+                                Next Step <ChevronRight size={20} />
+                            </button>
+                        ) : (
+                            <button
+                                onClick={handleSubmit}
+                                disabled={isSubmitting}
+                                className="flex-1 bg-yellow-400 text-black py-4 rounded-xl font-bold hover:bg-yellow-300 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isSubmitting ? "Launching..." : "Launch Event"}
+                            </button>
+                        )}
                     </div>
 
-                    {feedback && <div className="mt-4"><Alert message={feedback.message} type={feedback.type} /></div>}
-
-                    <button type="submit" disabled={isSubmitting} className="w-full bg-yellow-400 text-black font-bold py-3 rounded hover:bg-yellow-500 transition disabled:bg-gray-500 disabled:cursor-not-allowed">
-                        {isSubmitting ? "Processing..." : "Create Event"}
-                    </button>
                 </form>
             </div>
         </div>
