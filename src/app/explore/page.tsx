@@ -92,6 +92,12 @@ const EventCard = ({
 
   const placeholderImg = "https://placehold.co/400x300/1a1a1a/ffffff?text=Event";
 
+  const getImageUrl = (imgStr: string) => {
+    if (!imgStr) return placeholderImg;
+    if (imgStr.startsWith("http")) return imgStr;
+    return `https://app.echelontix.com.ng/${imgStr}`;
+  };
+
   return (
     <div
       onClick={handleCardClick}
@@ -100,7 +106,7 @@ const EventCard = ({
       <div className="relative w-full h-40">
         {getStatusBadge()}
         <img
-          src={image ? `https://app.echelontix.com.ng/${image}` : placeholderImg}
+          src={getImageUrl(image)}
           alt={title}
           className="absolute inset-0 w-full h-full object-cover"
           onError={(e) => { (e.target as HTMLImageElement).src = placeholderImg }}
@@ -168,9 +174,9 @@ const InterestSelection = () => {
       setIsLoading(true);
       setError(null);
       try {
-        const api = process.env.NEXT_PUBLIC_API_URL
+        const api = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
 
-        const url =  `${api}event/getAllEvent`;
+        const url =  `${api}/event/getAllEvent`;
 
         //const data = response.data as { event: EventFromAPI[] };
         //const apiEvents: EventFromAPI[] = data.event;

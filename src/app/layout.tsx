@@ -7,6 +7,7 @@ import Fotter from "../component/Fotter";
 import "./globals.css";
 import { usePathname } from "next/navigation";
 import React, { useState, useEffect } from 'react'; // Import useState and useEffect
+import axios from 'axios';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,6 +36,22 @@ export default function RootLayout({
   // This effect runs only on the client side, after the component has mounted.
   useEffect(() => {
     setIsClient(true);
+
+    // Set up global axios interceptor for token authorization
+    const requestInterceptor = axios.interceptors.request.use((config) => {
+      const token = localStorage.getItem('token');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+
+      // Only attach the token to our own API calls, to avoid leaking it
+      if (token && config.url && config.url.startsWith(apiUrl)) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    });
+
+    return () => {
+      axios.interceptors.request.eject(requestInterceptor);
+    };
   }, []);
 
   // Hide layout on these paths

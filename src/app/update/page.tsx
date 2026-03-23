@@ -33,7 +33,7 @@ export default function UpdateProfilePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const url = process.env.NEXT_PUBLIC_API_URL;
+  const url = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
 
   // Effect to populate the form directly from localStorage on component mount
   useEffect(() => {
@@ -67,9 +67,9 @@ export default function UpdateProfilePage() {
             user_id: parsedData.user_id,
             name: parsedData.name || '',
             email: parsedData.email || '',
-            phoneNo: parsedData.phoneno || '', // Map 'phoneno' from localStorage to 'phoneNo'
+            phoneNo: parsedData.phone_no || parsedData.phoneno || '', // Map 'phone_no' from localStorage to 'phoneNo'
             address: parsedData.address || '',
-            brandName: parsedData.brandname || '',
+            brandName: parsedData.brandname || parsedData.brand_name || '',
         };
 
         // Set the state to pre-fill the form fields
@@ -99,18 +99,29 @@ export default function UpdateProfilePage() {
     setError(null);
 
     // Determine the correct API endpoint based on whether the user has a brand
-    const updateUrl = hasBrandName
-      ? `${url}profile/updatecreator` // API for creators
-      : `${url}profile/updateuser`;    // API for regular users
+        const updateUrl = hasBrandName
+      ? `${url}/profile/updatecreator` // API for creators
+      : `${url}/profile/updateuser`;    // API for regular users
 
-    // The payload includes the userId and all fields from the form state.
-    const payload = {
-        userId,
-        ...profile,
+    // The payload needs to be x-www-form-urlencoded and match schema.
+    const payloadFields: Record<string, string> = {
+        name: profile.name,
+        email: profile.email,
+        phone_no: profile.phoneNo,
+        address: profile.address,
     };
+    if (hasBrandName && profile.brandName) {
+        payloadFields.brand_name = profile.brandName;
+    }
+
+    const payload = new URLSearchParams(payloadFields);
 
     try {
-      await axios.put(updateUrl, payload);
+      await axios.put(updateUrl, payload.toString(), {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      });
       alert("Profile updated successfully!");
 
       // OPTIONAL: Update localStorage with the new profile details
@@ -119,8 +130,10 @@ export default function UpdateProfilePage() {
           name: profile.name,
           email: profile.email,
           phoneno: profile.phoneNo,
+          phone_no: profile.phoneNo,
           address: profile.address,
           brandname: profile.brandName,
+          brand_name: profile.brandName,
       };
       localStorage.setItem('userData', JSON.stringify(updatedUserData));
 

@@ -107,10 +107,10 @@ export default function ForgotPasswordPage() {
     }
 
     setIsLoading(true);
-    const url = process.env.NEXT_PUBLIC_API_URL
+    const url = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
     try {
-      const resetUrl = `${url}auth/resetpassword`;
-      await axios.put(resetUrl, { email, newPassword });
+      const resetUrl = `${url}/auth/reset-password`;
+      await axios.post(resetUrl, { email, newPassword });
       setSuccessMessage("Verification code sent successfully!");
       setIsModalOpen(true); // Open modal on success
     } catch (err: any) {
@@ -124,9 +124,9 @@ export default function ForgotPasswordPage() {
   const handleVerifyAndReset = async (code: string) => {
     setIsVerifying(true);
     setError(null);
-    const url = process.env.NEXT_PUBLIC_API_URL
+    const url = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
     try {
-        const verifyUrl = `${url}auth/verify`;
+        const verifyUrl = `${url}/auth/verify-code`;
         await axios.post(verifyUrl, { email, code, newPassword });
 
         alert("Password reset successfully! Redirecting to login.");

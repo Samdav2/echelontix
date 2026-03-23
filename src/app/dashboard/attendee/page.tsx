@@ -72,9 +72,9 @@ const EventCard = ({ event, status }: { event: EventData, status: EventStatus })
             onClick={handleEventClick}
             className={`rounded-2xl overflow-hidden bg-black/30 border border-white/10 shadow-lg group transition-all duration-300 flex flex-col ${status !== 'ended' ? 'cursor-pointer hover:border-white/30 hover:shadow-2xl' : 'opacity-60'}`}
         >
-            <div className="relative w-full h-40">
-                <img src={event.picture ? `https://app.echelontix.com.ng/${event.picture}` : 'https://placehold.co/400x300/1a1a1a/ffffff?text=Event'} alt={event.event_name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
-                 <div className={`absolute top-3 right-3 text-xs font-semibold px-3 py-1 rounded-full backdrop-blur-md border ${statusStyles[status]}`}>
+            <div className="relative w-full h-48">
+                <img src={event.picture ? (event.picture.startsWith("http") ? event.picture : `${process.env.NEXT_PUBLIC_API_URL}/${event.picture}`) : 'https://placehold.co/400x300/1a1a1a/ffffff?text=Event'} alt={event.event_name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                <div className={`absolute top-3 right-3 text-xs font-semibold px-3 py-1 rounded-full backdrop-blur-md border ${statusStyles[status]}`}>
                     {status.charAt(0).toUpperCase() + status.slice(1)}
                 </div>
             </div>
@@ -135,8 +135,11 @@ export default function AttendeeDashboard() {
     if (storedData) {
       try {
         const parsedData = JSON.parse(storedData);
-        if (parsedData && parsedData.user_id) {
+        const hasBrand = parsedData?.brandname && String(parsedData.brandname).trim() !== '';
+        if (parsedData && parsedData.user_id && !hasBrand) {
           setUserData(parsedData);
+        } else if (hasBrand) {
+          router.push('/dashboard/creator');
         } else {
           router.push('/auth/signin');
         }
@@ -147,14 +150,14 @@ export default function AttendeeDashboard() {
       router.push('/auth/signin');
     }
   }, [router]);
-  const url = process.env.NEXT_PUBLIC_API_URL
+  const url = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
   const fetchInitialData = useCallback(async () => {
     if (!userData) return;
     setIsLoading(true);
     setError(null);
     try {
-        const interestsUrl = `${url}user/events/${userData.user_id}`;
-        const allEventsUrl = `${url}event/getAllEvent`;
+        const interestsUrl = `${url}/user/interestedEvents`;
+        const allEventsUrl = `${url}/event/getAllEvent`;
 
         // Fetch both user interests and all events at the same time
         const [interestsResponse, eventsResponse] = await Promise.all([
@@ -162,12 +165,21 @@ export default function AttendeeDashboard() {
             axios.get(allEventsUrl)
         ]);
 
-        // Safely parse interests, defaulting to an empty array
-        const interestsData = interestsResponse.data?.interests;
-        const interestsArray = interestsData ? JSON.parse(interestsData) : [];
-        setUserInterests(interestsArray);
-
-        const events = eventsResponse.data?.event || [];
+          // Safely parse interests, defaulting to an empty array
+          const responseData = interestsResponse.data;
+          const interestsData = responseData?.interests;
+          let interestsArray = [];
+          if (interestsData) {
+            try {
+              interestsArray = typeof interestsData === 'string' ? JSON.parse(interestsData) : interestsData;
+            } catch(e) {
+              interestsArray = interestsData;
+            }
+          } else if (Array.isArray(responseData)) {
+             // If it returns events directly, perhaps extract unique categories?
+             interestsArray = Array.from(new Set(responseData.map(r => r.category).filter(Boolean)));
+          }
+          setUserInterests(interestsArray);        const events = eventsResponse.data?.event || [];
         setAllEvents(events);
 
     } catch (err) {

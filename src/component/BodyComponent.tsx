@@ -75,7 +75,7 @@ const EventCard = ({
       <div className="relative w-full h-40">
         {getStatusBadge()}
         <img
-          src={image ? `https://samdavweb.helioho.st/${image}`: placeholderImg}
+          src={image ? (image.startsWith("http") ? image : `${process.env.NEXT_PUBLIC_API_URL}/${image}`) : placeholderImg}
           alt={title}
           className="absolute inset-0 w-full h-full object-cover"
           onError={(e) => { (e.target as HTMLImageElement).src = placeholderImg }}

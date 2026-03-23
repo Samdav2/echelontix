@@ -36,10 +36,13 @@ interface EventDetails {
   bank: string;
 }
 
-// Represents the entire API response
+// Represents the entire API response - flexible to handle different formats
 interface EventApiResponse {
-    events: EventDetails;
-    table: Table[];
+    events?: EventDetails;
+    event?: EventDetails | EventDetails[];
+    table?: Table[];
+    tables?: Table[];
+    [key: string]: any;
 }
 
 
@@ -72,7 +75,7 @@ const EventForm: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [ticketGenerated, setTicketGenerated] = useState(false);
   const [generatedTicketData, setGeneratedTicketData] = useState<any>(null);
-          const api_url = process.env.NEXT_PUBLIC_API_URL;
+          const api_url = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
 
 
 
@@ -98,25 +101,39 @@ const EventForm: React.FC = () => {
     const fetchEventDetails = async () => {
       setIsLoading(true);
       setError(null);
-        const api_url = process.env.NEXT_PUBLIC_API_URL;
+        const api_url = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
         console.log("Testing API", api_url)
       try {
-        const getEventUrl = `${api_url}event/getEvent?eventId=`;
+        const getEventUrl = `${api_url}/event/getEvent?eventId=`;
         // The response is now expected to be an object with 'events' and 'table' properties
         const response = await axios.get<EventApiResponse>(`${getEventUrl}${eventId}`);
 
+        console.log("Event API Response:", response.data);
+
+        // Handle different response structures
+        let details: EventDetails | null = null;
+        let tableData: Table[] = [];
+
         if (response.data && response.data.events) {
-          const details = response.data.events;
-          const tableData = response.data.table || [];
-
-          setEventDetails(details);
-          setTables(tableData);
-
-          // Set default ticket price from the main event price
-          setFormData(prev => ({ ...prev, selectedTicket: { type: 'regular', price: parseFloat(details.price) || 0 } }));
+          details = response.data.events;
+          tableData = response.data.table || [];
+        } else if (response.data && response.data.event) {
+          // Handle single event response
+          details = Array.isArray(response.data.event) ? response.data.event[0] : (response.data.event as EventDetails);
+          tableData = response.data.table || response.data.tables || [];
+        } else if (response.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
+          // Handle direct event object
+          details = response.data as EventDetails;
+          tableData = [];
         } else {
-          throw new Error("Event data is not in the expected format.");
+          throw new Error(`Event data is not in the expected format. Received: ${JSON.stringify(response.data)}`);
         }
+
+        setEventDetails(details);
+        setTables(tableData);
+
+        // Set default ticket price from the main event price
+        setFormData(prev => ({ ...prev, selectedTicket: { type: 'regular', price: parseFloat(details!.price) || 0 } }));
       } catch (err) {
         setError("Could not load event details. Please check the event ID and try again.");
         console.error(err);
@@ -147,40 +164,176 @@ const EventForm: React.FC = () => {
   };
 
   const createStyledPDF = (ticketData: any) => {
-    const doc = new jsPDF({ orientation: 'landscape', unit: 'px', format: [400, 200] });
-    const ticketType = ticketData.ticketType.toUpperCase();
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
 
+    // --- LUXURY COLORS ---
     const colors = {
-      REGULAR: '#6366F1', VIP: '#D97706', VVIP: '#7E22CE', TABLE: '#DC2626', DEFAULT: '#4B5563'
+      black: [0, 0, 0],
+      deepCharcoal: [10, 10, 10],
+      gold: [197, 160, 89],
+      lightGold: [231, 209, 146],
+      subtleGray: [26, 26, 26],
+      white: [255, 255, 255]
     };
-    // Use a generic color for tables unless specific names are matched
-    const ticketColor = colors[ticketType as keyof typeof colors] || colors.TABLE;
 
-    doc.addImage(ticketData.eventImage, 'JPEG', 0, 0, 400, 200);
-    doc.setFillColor(0, 0, 0, 0.6);
-    doc.rect(0, 0, 400, 200, 'F');
-    doc.setFillColor(ticketColor);
-    doc.rect(0, 0, 10, 200, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(22);
+    // 1. Master Background Canvas
+    doc.setFillColor(colors.black[0], colors.black[1], colors.black[2]);
+    doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+    // 2. The Ticket Card - Centered
+    const ticketX = (pageWidth - 260) / 2;
+    const ticketY = (pageHeight - 130) / 2;
+    const ticketWidth = 260;
+    const ticketHeight = 130;
+
+    doc.setFillColor(colors.deepCharcoal[0], colors.deepCharcoal[1], colors.deepCharcoal[2]);
+    doc.setDrawColor(colors.gold[0], colors.gold[1], colors.gold[2]);
+    doc.setLineWidth(0.8);
+    doc.roundedRect(ticketX, ticketY, ticketWidth, ticketHeight, 3, 3, 'FD');
+
+    // 3. Cyber Background Grid (subtle decorative lines)
+    // Removed because they overlapped with the text and caused visual clutter.
+
+    // 4. Left Aesthetic Border with Member Rank
+    doc.setFillColor(colors.gold[0], colors.gold[1], colors.gold[2]);
+    doc.rect(ticketX, ticketY, 4, ticketHeight, 'F');
+    // Removed rotated text that was mispositioned and illegible
+
+
+    // 5. Header - ECHELONTIX Logo
+    doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
     doc.setFont('helvetica', 'bold');
-    doc.text(ticketData.eventName, 20, 30);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`ATTENDEE: ${ticketData.attendeeName}`, 20, 50);
-    doc.text(`DATE: ${new Date(ticketData.eventDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`, 20, 65);
-    doc.text(`TIME: ${ticketData.eventTime}`, 20, 80);
+    doc.setFontSize(24);
+    doc.text('ECHELON', ticketX + 8, ticketY + 8);
+    doc.setTextColor(colors.gold[0], colors.gold[1], colors.gold[2]);
+    doc.text('TIX', ticketX + 8 + doc.getTextWidth('ECHELON'), ticketY + 8);
+
+    // Certificate of Authenticity (top right)
+    doc.setTextColor(colors.gold[0], colors.gold[1], colors.gold[2]);
     doc.setFont('helvetica', 'bold');
-    doc.setFillColor(ticketColor);
-    doc.roundedRect(20, 95, ticketType.length * 5 + 15, 15, 3, 3, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.text(ticketType, 25, 105);
-    doc.addImage(ticketData.qrCodeUrl, 'PNG', 280, 50, 100, 100);
-    doc.setFontSize(10);
-    doc.text(ticketData.ticketToken, 280, 165);
+    doc.setFontSize(6);
+    const authCode = `#ECH-VIP-${Math.floor(Math.random() * 9999).toString().padStart(4, '0')}-ALPHA`;
+    doc.text(`CERTIFICATE OF AUTHENTICITY: ${authCode}`, ticketX + ticketWidth - 8, ticketY + 6, { align: 'right' });
+
+    // 6. Personalization Section - "WE HAVE BEEN EXPECTING YOU"
+    doc.setTextColor(colors.gold[0], colors.gold[1], colors.gold[2]);
+    doc.setFont('helvetica', 'italic');
     doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text('Powered by ECHELONTIX', 20, 185);
+    doc.text('WE HAVE BEEN EXPECTING YOU,', ticketX + 8, ticketY + 18);
+
+    // Guest Name (Large & Bold)
+    doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(28);
+    const guestName = ticketData.attendeeName.toUpperCase();
+    doc.text(guestName, ticketX + 8, ticketY + 30);
+
+    // Welcome Message
+    doc.setTextColor(colors.gold[0], colors.gold[1], colors.gold[2]);
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(7);
+    doc.text('Your presence defines the evening. Welcome to the Inner Circle.', ticketX + 8, ticketY + 36);
+
+    // 7. Main Event Title
+    doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(32);
+    const eventTitle = ticketData.eventName.substring(0, 25).toUpperCase();
+    doc.text(eventTitle, ticketX + 8, ticketY + 48);
+
+    // Gold underline
+    doc.setDrawColor(colors.gold[0], colors.gold[1], colors.gold[2]);
+    doc.setLineWidth(1.5);
+    doc.line(ticketX + 8, ticketY + 50, ticketX + 50, ticketY + 50);
+
+    // Event Subtitle
+    doc.setTextColor(colors.gold[0], colors.gold[1], colors.gold[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text('A SUPREME ASSEMBLY OF GLOBAL VISIONARIES', ticketX + 8, ticketY + 55);
+
+    // 8. Data Grid (Arrival Date, Seating Category, Privilege Level)
+    const dataY = ticketY + 72;
+    doc.setTextColor(colors.gold[0], colors.gold[1], colors.gold[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(6);
+    doc.text('ARRIVAL DATE', ticketX + 8, dataY);
+    doc.text('SEATING CATEGORY', ticketX + 85, dataY);
+    doc.text('PRIVILEGE LEVEL', ticketX + 160, dataY);
+
+    // Data values
+    doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    const formattedDate = new Date(ticketData.eventDate).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    }).toUpperCase();
+    doc.text(formattedDate, ticketX + 8, dataY + 8);
+    doc.text('PRIVATE BALCONY', ticketX + 85, dataY + 8);
+    doc.text('UNRESTRICTED', ticketX + 160, dataY + 8);
+
+    // 9. Vertical Perforation Line (The "Stub" separator)
+    doc.setDrawColor(colors.gold[0], colors.gold[1], colors.gold[2]);
+    doc.setLineWidth(0.3);
+    const perfLineX = ticketX + ticketWidth - 65;
+    // Dashed line effect
+    for (let y = ticketY + 2; y < ticketY + ticketHeight - 2; y += 2.5) {
+      doc.line(perfLineX, y, perfLineX, y + 1.5);
+    }
+
+    // 10. QR Code Section (Right stub)
+    const qrX = ticketX + ticketWidth - 55;
+    const qrY = ticketY + 10;
+    const qrSize = 48;
+
+    // QR Frame (Gold border)
+    doc.setDrawColor(colors.gold[0], colors.gold[1], colors.gold[2]);
+    doc.setLineWidth(1.5);
+    doc.rect(qrX, qrY, qrSize, qrSize);
+
+    // Add the actual QR image
+    if (ticketData.qrCodeUrl) {
+      doc.addImage(ticketData.qrCodeUrl, 'PNG', qrX + 2, qrY + 2, qrSize - 4, qrSize - 4);
+    }
+
+    // "VERIFY SCAN AT ENTRY" text
+    doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.text('VERIFY SCAN AT ENTRY', qrX + qrSize / 2, qrY + qrSize + 6, { align: 'center' });
+
+    // Valid for one entry
+    doc.setTextColor(colors.gold[0], colors.gold[1], colors.gold[2]);
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(5);
+    doc.text('VALID FOR ONE PRESTIGIOUS ENTRY', qrX + qrSize / 2, qrY + qrSize + 10, { align: 'center' });
+
+    // 11. Digital URL & Slogan at bottom
+    doc.setTextColor(colors.gold[0], colors.gold[1], colors.gold[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    // Center it in the main stub (between left border and right stub)
+    const mainSectionWidth = ticketWidth - 65;
+    doc.text('WWW.ECHELONTIX.COM.NG', ticketX + mainSectionWidth / 2, ticketY + ticketHeight - 8, { align: 'center' });
+
+    // Brand Slogan
+    doc.setTextColor(colors.subtleGray[0], colors.subtleGray[1], colors.subtleGray[2]);
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(5);
+    doc.text('EXCELLENCE IS NOT AN ACT, BUT A HABIT.', ticketX + mainSectionWidth / 2, ticketY + ticketHeight - 4, { align: 'center' });
+
+    // 12. Authorization text
+    doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(6);
+    // Move to the left corner to avoid overlap with URL
+    doc.text('Authorized By Echelon Executive Board', ticketX + 8, ticketY + ticketHeight - 8);
+
+    // Save the PDF
     doc.save(`${ticketData.ticketToken}-ticket.pdf`);
   };
 
@@ -201,24 +354,33 @@ const EventForm: React.FC = () => {
       const token = generateTicketToken(fullName, eventDetails!.event_name);
       const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${token}`;
 
+      // Process image URL for Cloudinary/legacy support
+      const processedImageUrl = eventDetails!.picture
+        ? (eventDetails!.picture.startsWith("http") ? eventDetails!.picture : `${process.env.NEXT_PUBLIC_API_URL}/${eventDetails!.picture}`)
+        : '/placeholder-image.png';
+
       const ticketDataForPDF = {
         attendeeName: fullName, eventName: eventDetails!.event_name, eventDate: eventDetails!.date,
         eventTime: eventDetails!.time_in, ticketType: formData.selectedTicket.type, ticketToken: token,
-        qrCodeUrl: qrCodeUrl, eventImage: `https://app.echelontix.com.ng/${eventDetails!.picture}`
+        qrCodeUrl: qrCodeUrl, eventImage: processedImageUrl
       };
 
       setGeneratedTicketData(ticketDataForPDF);
 
-      const attendUrl = `${api_url}event/attendevent`;
-      await axios.post(attendUrl, {
-          userId: userId,
-          eventId: eventDetails!.id,
+      const attendUrl = `${api_url}/event/attendEvent`;
+      const attendPayload = new URLSearchParams({
+          event_id: eventDetails!.id.toString(),
           email: formData.email,
-          qrcodeURL: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${token}` ,
+          ticket_type: formData.selectedTicket.type,
           token: token,
-          ticketType: formData.selectedTicket.type,
-          userName: fullName,
-          eventName: eventDetails?.event_name
+      });
+      // qrcode_url is optional but schema says it exists
+      attendPayload.append("qrcode_url", `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${token}`);
+
+      await axios.post(attendUrl, attendPayload.toString(), {
+          headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+          }
       });
 
       setTicketGenerated(true);
@@ -307,7 +469,7 @@ const EventForm: React.FC = () => {
         ) : (
             <motion.div key="form" initial={{opacity: 0}} animate={{opacity: 1}} className="relative z-10 max-w-6xl mx-auto px-4 py-20 flex flex-col lg:flex-row gap-10 items-start lg:items-center justify-between">
                 <div className="text-white max-w-lg space-y-6">
-                    <img src={`https://app.echelontix.com.ng/${eventDetails.picture}`} alt={eventDetails.event_name} className="w-full sm:w-80 border-4 border-yellow-400 rounded-lg shadow-lg" />
+                    <img src={eventDetails.picture ? (eventDetails.picture.startsWith("http") ? eventDetails.picture : `${process.env.NEXT_PUBLIC_API_URL}/${eventDetails.picture}`) : '/placeholder-image.png'} alt={eventDetails.event_name} className="w-full sm:w-80 border-4 border-yellow-400 rounded-lg shadow-lg" />
                     <div className="space-y-2">
                         <p className="text-4xl font-extrabold">{formattedDate.day}<span className="text-lg block font-semibold">{formattedDate.month} {formattedDate.year}</span></p>
                         <p className="text-sm uppercase">Entry at {eventDetails.time_in}</p>

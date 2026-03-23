@@ -55,26 +55,57 @@ const SignInPage: React.FC = () => {
 
     try {
       const user = { email, password };
-      const loginUrl = process.env.NEXT_PUBLIC_API_URL;
+      const loginUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
 
-      const response = await axios.post(`${loginUrl}auth/login`, user);
+      const response = await axios.post(`${loginUrl}/auth/login`, user);
 
       if (response.data) {
         setSuccessMessage('Login Successful! Redirecting...');
 
-        const { profile } = response.data;
-        localStorage.setItem('userData', JSON.stringify(profile));
+        const { access_token, user_id } = response.data;
 
-        const redirectPath = profile.brandname
-          ? '/dashboard/creator'
-          : '/dashboard/attendee';
+        // Store token first so getProfile can use it in the interceptor
+        if (access_token) {
+          localStorage.setItem('token', access_token);
+        }
 
-        setTimeout(() => {
-          router.push(redirectPath);
-        }, 1500);
+        // Now fetch the full profile to get brandname
+        try {
+          const profileResponse = await axios.get(`${loginUrl}/profile/getProfile`, {
+            headers: {
+              Authorization: `Bearer ${access_token}`
+            }
+          });
+
+          const fullProfile = profileResponse.data;
+          const userData = {
+            ...fullProfile,
+            user_id: fullProfile.user_id || user_id,
+            brandname: fullProfile.brandname || fullProfile.brand_name || ''
+          };
+
+          localStorage.setItem('userData', JSON.stringify(userData));
+
+          const hasBrand = userData.brandname && String(userData.brandname).trim() !== '';
+          const redirectPath = hasBrand
+            ? '/dashboard/creator'
+            : '/dashboard/attendee';
+
+          setTimeout(() => {
+            router.push(redirectPath);
+          }, 1500);
+        } catch (profileErr: any) {
+          console.error('Failed to fetch profile:', profileErr);
+          setError('Login successful but failed to load profile data. Please try again.');
+          setIsLoading(false);
+        }
       }
     } catch (err: any) {
-      if (err.response?.data?.message) {
+      if (err.response?.data?.detail) {
+        // FastAPI validation errors return an array of details sometimes, or a string
+        const detail = err.response.data.detail;
+        setError(typeof detail === 'string' ? detail : 'Invalid credentials provided.');
+      } else if (err.response?.data?.message) {
         setError(err.response.data.message);
       } else {
         setError('Invalid credentials or server error. Please try again.');

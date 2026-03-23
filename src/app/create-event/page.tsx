@@ -19,6 +19,7 @@ import {
     ChevronLeft,
     Ticket
 } from 'lucide-react';
+import { Donut } from "progressive-shapes";
 
 // --- Helper Components ---
 const Alert: React.FC<{ message: string; type: 'success' | 'error' | 'info' }> = ({ message, type }) => {
@@ -61,6 +62,9 @@ interface EventDetails {
     price: string;
     vvvip_price: string;
 }
+
+
+
 
 // --- Bank List ---
 const bankCodeMapping: { [key: string]: string } = {
@@ -209,28 +213,8 @@ const CreateEventPage: React.FC = () => {
             // We'll use the first ticket as 'price' (Regular), and others as tables or special categories
             // For now, we'll send the tickets as 'tables' to the table creation endpoint as requested
 
-            // 1. Create Tables (Tickets)
-            if (tickets.length > 0) {
-                setFeedback({ message: "Creating ticket types...", type: 'info' });
-                const tablesPayload = tickets.map(ticket => ({
-                    tableName: ticket.name,
-                    tablePrice: parseInt(ticket.price, 10) || 0,
-                    tableCapacity: parseInt(ticket.capacity, 10) || 0,
-                }));
-
-                const tableApiPayload = {
-                    event_name: eventDetails.eventName,
-                    tables: tablesPayload
-                };
-
-                const url = process.env.NEXT_PUBLIC_API_URL;
-                await axios.post(`${url}event/tableCreation`, tableApiPayload, {
-                    headers: { "Content-Type": "application/json" },
-                });
-            }
-
-            // 2. Create Event
-            setFeedback({ message: "Finalizing event...", type: 'info' });
+            // 1. Create Event FIRST
+            setFeedback({ message: "Creating event...", type: 'info' });
             const formDataToSend = new FormData();
 
             // Map the first ticket price to the main price field for display purposes
@@ -246,14 +230,52 @@ const CreateEventPage: React.FC = () => {
 
             Object.entries(payload).forEach(([key, value]) => {
                 if (value !== null) {
-                    formDataToSend.append(key, value as string | Blob);
+                    let finalKey = key;
+                    if (key === 'eventName') finalKey = 'event_name';
+                    else if (key === 'eventAddress') finalKey = 'event_address';
+                    else if (key === 'timeIn') finalKey = 'time_in';
+                    else if (key === 'timeOut') finalKey = 'time_out';
+                    else if (key === 'picture') finalKey = 'file';
+                    else if (key === 'vip') finalKey = 'vip_price';
+                    else if (key === 'vvip') finalKey = 'vvip_price';
+
+                    formDataToSend.append(finalKey, value as string | Blob);
                 }
             });
 
-            const url = process.env.NEXT_PUBLIC_API_URL;
-            await axios.post(`${url}event/event`, formDataToSend, {
+            const url = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
+            const eventResponse = await axios.post(`${url}/event/event`, formDataToSend, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
+
+            // Get the event_id from the response
+            const eventId = eventResponse.data?.id || eventResponse.data?.event_id;
+            console.log('Event created with ID:', eventId);
+
+            // 2. Create Tables (Tickets) AFTER event is created
+            if (tickets.length > 0 && eventId) {
+                setFeedback({ message: "Creating ticket types...", type: 'info' });
+                const tablesPayload = tickets.map(ticket => ({
+                    tableName: ticket.name,
+                    tablePrice: parseInt(ticket.price, 10) || 0,
+                    tableCapacity: parseInt(ticket.capacity, 10) || 0,
+                }));
+
+                const tableApiPayload = {
+                    event_id: eventId,
+                    tables: tablesPayload
+                };
+
+                try {
+                    await axios.post(`${url}/event/tableCreation`, tableApiPayload, {
+                        headers: { "Content-Type": "application/json" },
+                    });
+                    console.log('Tables created successfully');
+                } catch (tableErr: any) {
+                    console.error('Failed to create tables:', tableErr);
+                    // Don't fail the whole operation if tables fail
+                }
+            }
 
             setFeedback({ message: "Event created successfully! Redirecting...", type: 'success' });
             setTimeout(() => router.push('/dashboard/creator'), 2000);
@@ -269,342 +291,352 @@ const CreateEventPage: React.FC = () => {
     if (!isClient) return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>;
 
     return (
-        <div className="min-h-screen bg-zinc-950 text-white selection:bg-yellow-500/30 flex flex-col">
-            {/* Header */}
-            <div className="border-b border-zinc-800 bg-black/50 backdrop-blur-md sticky top-0 z-50">
-                <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-                    <h1 className="text-xl font-bold text-yellow-400">Create Event</h1>
-                    <div className="flex items-center gap-2 text-sm text-zinc-400">
-                        Step <span className="text-white font-bold">{currentStep}</span> of 3
-                    </div>
-                </div>
-                {/* Progress Bar */}
-                <div className="h-1 bg-zinc-900 w-full">
-                    <div
-                        className="h-full bg-yellow-400 transition-all duration-500 ease-out"
-                        style={{ width: `${(currentStep / 3) * 100}%` }}
-                    />
-                </div>
-            </div>
+        <div className="min-h-screen bg-zinc-950 text-white selection:bg-yellow-500/30 py-8">
+            {/* Form Card with Donut */}
+            <div className="max-w-4xl mx-auto px-6">
+                <div className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl shadow-black/50 p-8 md:p-12">
+                    {/* Header with Donut Progress */}
+                    <div className="text-center mb-8">
+                        <h1 className="text-3xl font-bold text-yellow-400 mb-6">Create Event</h1>
 
-            <div className="flex-1 max-w-4xl mx-auto w-full p-6 md:py-12">
-                <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
-
-                    {/* --- STEP 1: EVENT DETAILS --- */}
-                    {currentStep === 1 && (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <div className="text-center mb-8">
-                                <h2 className="text-3xl font-bold mb-2">Event Details</h2>
-                                <p className="text-zinc-400">Tell us about your upcoming event.</p>
-                            </div>
-
-                            <div className="grid md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-zinc-300 flex items-center gap-2">
-                                        <AlignLeft size={16} /> Event Name
-                                    </label>
-                                    <input
-                                        type="text" name="eventName" value={eventDetails.eventName} onChange={handleChange}
-                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all"
-                                        placeholder="e.g. Summer Vibes 2025"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-zinc-300 flex items-center gap-2">
-                                        <Calendar size={16} /> Date
-                                    </label>
-                                    <input
-                                        type="date" name="date" value={eventDetails.date} onChange={handleChange}
-                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-zinc-300 flex items-center gap-2">
-                                        <Clock size={16} /> Start Time
-                                    </label>
-                                    <input
-                                        type="time" name="timeIn" value={eventDetails.timeIn} onChange={handleChange}
-                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-zinc-300 flex items-center gap-2">
-                                        <Clock size={16} /> End Time
-                                    </label>
-                                    <input
-                                        type="time" name="timeOut" value={eventDetails.timeOut} onChange={handleChange}
-                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-zinc-300 flex items-center gap-2">
-                                    <MapPin size={16} /> Location
-                                </label>
-                                <input
-                                    type="text" name="eventAddress" value={eventDetails.eventAddress} onChange={handleChange}
-                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all"
-                                    placeholder="Full address of the venue"
+                        {/* Donut Progress Indicator */}
+                        <div className="flex items-center justify-center mb-6">
+                            <div className="relative">
+                                <Donut
+                                    currentStep={currentStep}
+                                    totalSteps={3}
+                                    size={100}
+                                    backgroundColor="#27272a"
+                                    progressColor="#facc15"
                                 />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-zinc-300">Description</label>
-                                <textarea
-                                    name="summary" value={eventDetails.summary} onChange={handleChange} rows={4} maxLength={300}
-                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all resize-none"
-                                    placeholder="What's this event about?"
-                                />
-                            </div>
-
-                            <div className="grid md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-zinc-300">Category</label>
-                                    <select
-                                        name="category" value={eventDetails.category} onChange={handleChange}
-                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all appearance-none"
-                                    >
-                                        <option value="">Select Category</option>
-                                        <option value="Music">Music</option>
-                                        <option value="Sports">Sports</option>
-                                        <option value="Tech">Tech</option>
-                                        <option value="Art">Art</option>
-                                        <option value="Other">Other</option>
-                                    </select>
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-zinc-300 flex items-center gap-2">
-                                        <ImageIcon size={16} /> Cover Image
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            type="file" accept="image/*" onChange={handleImageChange}
-                                            className="hidden" id="imageUpload"
-                                        />
-                                        <label
-                                            htmlFor="imageUpload"
-                                            className="w-full bg-zinc-900 border border-dashed border-zinc-700 rounded-xl p-4 flex items-center justify-center cursor-pointer hover:border-yellow-400 hover:bg-zinc-800 transition-all h-[58px]"
-                                        >
-                                            {eventDetails.picture ? (
-                                                <span className="text-yellow-400 font-medium truncate px-4">{eventDetails.picture.name}</span>
-                                            ) : (
-                                                <span className="text-zinc-500">Click to upload image</span>
-                                            )}
-                                        </label>
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="text-center">
+                                        <div className="text-2xl font-bold text-white">{currentStep}</div>
+                                        <div className="text-xs text-zinc-500">of 3</div>
                                     </div>
                                 </div>
                             </div>
-
-                            {imagePreview && (
-                                <div className="relative h-48 w-full rounded-xl overflow-hidden border border-zinc-800">
-                                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-                                </div>
-                            )}
                         </div>
-                    )}
+                    </div>
 
-                    {/* --- STEP 2: TICKET DETAILS --- */}
-                    {currentStep === 2 && (
-                        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <div className="text-center mb-8">
-                                <h2 className="text-3xl font-bold mb-2">Ticket Setup</h2>
-                                <p className="text-zinc-400">Define your ticket types and pricing.</p>
-                            </div>
+                    <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
 
-                            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
-                                <label className="flex items-center gap-3 cursor-pointer">
-                                    <div className="relative">
+                        {/* --- STEP 1: EVENT DETAILS --- */}
+                        {currentStep === 1 && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div className="text-center mb-8">
+                                    <h2 className="text-3xl font-bold mb-2">Event Details</h2>
+                                    <p className="text-zinc-400">Tell us about your upcoming event.</p>
+                                </div>
+
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                                            <AlignLeft size={16} /> Event Name
+                                        </label>
                                         <input
-                                            type="checkbox" checked={isFree} onChange={handleFreeEventToggle}
-                                            className="sr-only peer"
+                                            type="text" name="eventName" value={eventDetails.eventName} onChange={handleChange}
+                                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all"
+                                            placeholder="e.g. Summer Vibes 2025"
                                         />
-                                        <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-400/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-400"></div>
                                     </div>
-                                    <span className="font-medium text-white">This is a free event</span>
-                                </label>
-                            </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                                            <Calendar size={16} /> Date
+                                        </label>
+                                        <input
+                                            type="date" name="date" value={eventDetails.date} onChange={handleChange}
+                                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all"
+                                        />
+                                    </div>
+                                </div>
 
-                            <div className="space-y-4">
-                                {tickets.map((ticket, index) => (
-                                    <div key={index} className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 relative group hover:border-yellow-400/30 transition-all">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <h3 className="font-bold text-lg flex items-center gap-2">
-                                                <Ticket size={18} className="text-yellow-400" />
-                                                Ticket Type {index + 1}
-                                            </h3>
-                                            {tickets.length > 1 && (
-                                                <button
-                                                    onClick={() => removeTicket(index)}
-                                                    className="text-zinc-500 hover:text-red-500 transition-colors p-2"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
-                                            )}
-                                        </div>
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                                            <Clock size={16} /> Start Time
+                                        </label>
+                                        <input
+                                            type="time" name="timeIn" value={eventDetails.timeIn} onChange={handleChange}
+                                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                                            <Clock size={16} /> End Time
+                                        </label>
+                                        <input
+                                            type="time" name="timeOut" value={eventDetails.timeOut} onChange={handleChange}
+                                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all"
+                                        />
+                                    </div>
+                                </div>
 
-                                        <div className="grid md:grid-cols-3 gap-4">
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-medium text-zinc-400 uppercase">Ticket Name</label>
-                                                <input
-                                                    type="text"
-                                                    value={ticket.name}
-                                                    onChange={(e) => handleTicketChange(index, 'name', e.target.value)}
-                                                    placeholder="e.g. Regular, VIP"
-                                                    className="w-full bg-black border border-zinc-700 rounded-lg p-3 focus:ring-1 focus:ring-yellow-400 outline-none"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-medium text-zinc-400 uppercase">Price (₦)</label>
-                                                <input
-                                                    type="number"
-                                                    value={ticket.price}
-                                                    onChange={(e) => handleTicketChange(index, 'price', e.target.value)}
-                                                    disabled={isFree}
-                                                    placeholder="0.00"
-                                                    className="w-full bg-black border border-zinc-700 rounded-lg p-3 focus:ring-1 focus:ring-yellow-400 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-medium text-zinc-400 uppercase">Capacity</label>
-                                                <input
-                                                    type="number"
-                                                    value={ticket.capacity}
-                                                    onChange={(e) => handleTicketChange(index, 'capacity', e.target.value)}
-                                                    className="w-full bg-black border border-zinc-700 rounded-lg p-3 focus:ring-1 focus:ring-yellow-400 outline-none"
-                                                />
-                                            </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                                        <MapPin size={16} /> Location
+                                    </label>
+                                    <input
+                                        type="text" name="eventAddress" value={eventDetails.eventAddress} onChange={handleChange}
+                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all"
+                                        placeholder="Full address of the venue"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-zinc-300">Description</label>
+                                    <textarea
+                                        name="summary" value={eventDetails.summary} onChange={handleChange} rows={4} maxLength={300}
+                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all resize-none"
+                                        placeholder="What's this event about?"
+                                    />
+                                </div>
+
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-zinc-300">Category</label>
+                                        <select
+                                            name="category" value={eventDetails.category} onChange={handleChange}
+                                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all appearance-none"
+                                        >
+                                            <option value="">Select Category</option>
+                                            <option value="Music">Music</option>
+                                            <option value="Sports">Sports</option>
+                                            <option value="Tech">Tech</option>
+                                            <option value="Art">Art</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                                            <ImageIcon size={16} /> Cover Image
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type="file" accept="image/*" onChange={handleImageChange}
+                                                className="hidden" id="imageUpload"
+                                            />
+                                            <label
+                                                htmlFor="imageUpload"
+                                                className="w-full bg-zinc-900 border border-dashed border-zinc-700 rounded-xl p-4 flex items-center justify-center cursor-pointer hover:border-yellow-400 hover:bg-zinc-800 transition-all h-[58px]"
+                                            >
+                                                {eventDetails.picture ? (
+                                                    <span className="text-yellow-400 font-medium truncate px-4">{eventDetails.picture.name}</span>
+                                                ) : (
+                                                    <span className="text-zinc-500">Click to upload image</span>
+                                                )}
+                                            </label>
                                         </div>
                                     </div>
-                                ))}
+                                </div>
 
-                                {!isFree && (
-                                    <button
-                                        onClick={addTicket}
-                                        className="w-full py-4 border border-dashed border-zinc-700 rounded-xl text-zinc-400 hover:text-yellow-400 hover:border-yellow-400 hover:bg-yellow-400/5 transition-all flex items-center justify-center gap-2 font-medium"
-                                    >
-                                        <Plus size={20} /> Add Another Ticket Type
-                                    </button>
+                                {imagePreview && (
+                                    <div className="relative h-48 w-full rounded-xl overflow-hidden border border-zinc-800">
+                                        <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                                    </div>
                                 )}
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {/* --- STEP 3: PAYOUT & REVIEW --- */}
-                    {currentStep === 3 && (
-                        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <div className="text-center mb-8">
-                                <h2 className="text-3xl font-bold mb-2">Finalize</h2>
-                                <p className="text-zinc-400">Set up payouts and launch your event.</p>
+                        {/* --- STEP 2: TICKET DETAILS --- */}
+                        {currentStep === 2 && (
+                            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div className="text-center mb-8">
+                                    <h2 className="text-3xl font-bold mb-2">Ticket Setup</h2>
+                                    <p className="text-zinc-400">Define your ticket types and pricing.</p>
+                                </div>
+
+                                <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+                                    <label className="flex items-center gap-3 cursor-pointer">
+                                        <div className="relative">
+                                            <input
+                                                type="checkbox" checked={isFree} onChange={handleFreeEventToggle}
+                                                className="sr-only peer"
+                                            />
+                                            <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-400/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-400"></div>
+                                        </div>
+                                        <span className="font-medium text-white">This is a free event</span>
+                                    </label>
+                                </div>
+
+                                <div className="space-y-4">
+                                    {tickets.map((ticket, index) => (
+                                        <div key={index} className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 relative group hover:border-yellow-400/30 transition-all">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h3 className="font-bold text-lg flex items-center gap-2">
+                                                    <Ticket size={18} className="text-yellow-400" />
+                                                    Ticket Type {index + 1}
+                                                </h3>
+                                                {tickets.length > 1 && (
+                                                    <button
+                                                        onClick={() => removeTicket(index)}
+                                                        className="text-zinc-500 hover:text-red-500 transition-colors p-2"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            <div className="grid md:grid-cols-3 gap-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-medium text-zinc-400 uppercase">Ticket Name</label>
+                                                    <input
+                                                        type="text"
+                                                        value={ticket.name}
+                                                        onChange={(e) => handleTicketChange(index, 'name', e.target.value)}
+                                                        placeholder="e.g. Regular, VIP"
+                                                        className="w-full bg-black border border-zinc-700 rounded-lg p-3 focus:ring-1 focus:ring-yellow-400 outline-none"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-medium text-zinc-400 uppercase">Price (₦)</label>
+                                                    <input
+                                                        type="number"
+                                                        value={ticket.price}
+                                                        onChange={(e) => handleTicketChange(index, 'price', e.target.value)}
+                                                        disabled={isFree}
+                                                        placeholder="0.00"
+                                                        className="w-full bg-black border border-zinc-700 rounded-lg p-3 focus:ring-1 focus:ring-yellow-400 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-medium text-zinc-400 uppercase">Capacity</label>
+                                                    <input
+                                                        type="number"
+                                                        value={ticket.capacity}
+                                                        onChange={(e) => handleTicketChange(index, 'capacity', e.target.value)}
+                                                        className="w-full bg-black border border-zinc-700 rounded-lg p-3 focus:ring-1 focus:ring-yellow-400 outline-none"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {!isFree && (
+                                        <button
+                                            onClick={addTicket}
+                                            className="w-full py-4 border border-dashed border-zinc-700 rounded-xl text-zinc-400 hover:text-yellow-400 hover:border-yellow-400 hover:bg-yellow-400/5 transition-all flex items-center justify-center gap-2 font-medium"
+                                        >
+                                            <Plus size={20} /> Add Another Ticket Type
+                                        </button>
+                                    )}
+                                </div>
                             </div>
+                        )}
 
-                            {!isFree ? (
-                                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 space-y-6">
-                                    <div className="flex items-center gap-3 text-yellow-400 mb-2">
-                                        <CreditCard size={24} />
-                                        <h3 className="text-xl font-bold">Payout Details</h3>
+                        {/* --- STEP 3: PAYOUT & REVIEW --- */}
+                        {currentStep === 3 && (
+                            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div className="text-center mb-8">
+                                    <h2 className="text-3xl font-bold mb-2">Finalize</h2>
+                                    <p className="text-zinc-400">Set up payouts and launch your event.</p>
+                                </div>
+
+                                {!isFree ? (
+                                    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 space-y-6">
+                                        <div className="flex items-center gap-3 text-yellow-400 mb-2">
+                                            <CreditCard size={24} />
+                                            <h3 className="text-xl font-bold">Payout Details</h3>
+                                        </div>
+                                        <p className="text-sm text-zinc-400">
+                                            Where should we send your ticket sales earnings?
+                                        </p>
+
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium text-zinc-300">Bank Name</label>
+                                                <select
+                                                    name="bank" value={eventDetails.bank} onChange={handleChange}
+                                                    className="w-full bg-black border border-zinc-700 rounded-lg p-4 focus:ring-1 focus:ring-yellow-400 outline-none"
+                                                >
+                                                    <option value="">Select Bank</option>
+                                                    {bankList.map(bank => <option key={bank} value={bank}>{bank}</option>)}
+                                                </select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium text-zinc-300">Account Number</label>
+                                                <input
+                                                    type="text" name="account_number" value={eventDetails.account_number} onChange={handleChange}
+                                                    placeholder="0123456789" maxLength={10}
+                                                    className="w-full bg-black border border-zinc-700 rounded-lg p-4 focus:ring-1 focus:ring-yellow-400 outline-none"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium text-zinc-300">Account Name</label>
+                                                <input
+                                                    type="text" name="account_name" value={eventDetails.account_name} onChange={handleChange}
+                                                    placeholder="Account Holder Name"
+                                                    className="w-full bg-black border border-zinc-700 rounded-lg p-4 focus:ring-1 focus:ring-yellow-400 outline-none"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
-                                    <p className="text-sm text-zinc-400">
-                                        Where should we send your ticket sales earnings?
-                                    </p>
+                                ) : (
+                                    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-8 text-center">
+                                        <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <CheckCircle2 size={32} className="text-green-500" />
+                                        </div>
+                                        <h3 className="text-xl font-bold text-white mb-2">Free Event</h3>
+                                        <p className="text-zinc-400">
+                                            No payout details required. You're ready to launch!
+                                        </p>
+                                    </div>
+                                )}
 
-                                    <div className="space-y-4">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium text-zinc-300">Bank Name</label>
-                                            <select
-                                                name="bank" value={eventDetails.bank} onChange={handleChange}
-                                                className="w-full bg-black border border-zinc-700 rounded-lg p-4 focus:ring-1 focus:ring-yellow-400 outline-none"
-                                            >
-                                                <option value="">Select Bank</option>
-                                                {bankList.map(bank => <option key={bank} value={bank}>{bank}</option>)}
-                                            </select>
+                                <div className="bg-zinc-900/30 border border-zinc-800 rounded-xl p-6">
+                                    <h3 className="font-bold text-white mb-4">Summary</h3>
+                                    <div className="space-y-2 text-sm text-zinc-400">
+                                        <div className="flex justify-between">
+                                            <span>Event</span>
+                                            <span className="text-white">{eventDetails.eventName || 'Untitled'}</span>
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium text-zinc-300">Account Number</label>
-                                            <input
-                                                type="text" name="account_number" value={eventDetails.account_number} onChange={handleChange}
-                                                placeholder="0123456789" maxLength={10}
-                                                className="w-full bg-black border border-zinc-700 rounded-lg p-4 focus:ring-1 focus:ring-yellow-400 outline-none"
-                                            />
+                                        <div className="flex justify-between">
+                                            <span>Date</span>
+                                            <span className="text-white">{eventDetails.date || 'Not set'}</span>
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium text-zinc-300">Account Name</label>
-                                            <input
-                                                type="text" name="account_name" value={eventDetails.account_name} onChange={handleChange}
-                                                placeholder="Account Holder Name"
-                                                className="w-full bg-black border border-zinc-700 rounded-lg p-4 focus:ring-1 focus:ring-yellow-400 outline-none"
-                                            />
+                                        <div className="flex justify-between">
+                                            <span>Tickets</span>
+                                            <span className="text-white">{tickets.length} types</span>
                                         </div>
                                     </div>
                                 </div>
-                            ) : (
-                                <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-8 text-center">
-                                    <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <CheckCircle2 size={32} className="text-green-500" />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-white mb-2">Free Event</h3>
-                                    <p className="text-zinc-400">
-                                        No payout details required. You're ready to launch!
-                                    </p>
-                                </div>
+                            </div>
+                        )}
+
+                        {/* --- FEEDBACK ALERT --- */}
+                        {feedback && <Alert message={feedback.message} type={feedback.type} />}
+
+                        {/* --- NAVIGATION BUTTONS --- */}
+                        <div className="flex items-center gap-4 pt-4">
+                            {currentStep > 1 && (
+                                <button
+                                    onClick={prevStep}
+                                    className="flex-1 py-4 rounded-xl border border-zinc-700 font-bold hover:bg-zinc-800 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <ChevronLeft size={20} /> Back
+                                </button>
                             )}
 
-                            <div className="bg-zinc-900/30 border border-zinc-800 rounded-xl p-6">
-                                <h3 className="font-bold text-white mb-4">Summary</h3>
-                                <div className="space-y-2 text-sm text-zinc-400">
-                                    <div className="flex justify-between">
-                                        <span>Event</span>
-                                        <span className="text-white">{eventDetails.eventName || 'Untitled'}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span>Date</span>
-                                        <span className="text-white">{eventDetails.date || 'Not set'}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span>Tickets</span>
-                                        <span className="text-white">{tickets.length} types</span>
-                                    </div>
-                                </div>
-                            </div>
+                            {currentStep < 3 ? (
+                                <button
+                                    onClick={nextStep}
+                                    className="flex-1 bg-yellow-400 text-black py-4 rounded-xl font-bold hover:bg-yellow-300 transition-all flex items-center justify-center gap-2"
+                                >
+                                    Next Step <ChevronRight size={20} />
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleSubmit}
+                                    disabled={isSubmitting}
+                                    className="flex-1 bg-yellow-400 text-black py-4 rounded-xl font-bold hover:bg-yellow-300 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isSubmitting ? "Launching..." : "Launch Event"}
+                                </button>
+                            )}
                         </div>
-                    )}
 
-                    {/* --- FEEDBACK ALERT --- */}
-                    {feedback && <Alert message={feedback.message} type={feedback.type} />}
-
-                    {/* --- NAVIGATION BUTTONS --- */}
-                    <div className="flex items-center gap-4 pt-4">
-                        {currentStep > 1 && (
-                            <button
-                                onClick={prevStep}
-                                className="flex-1 py-4 rounded-xl border border-zinc-700 font-bold hover:bg-zinc-800 transition-all flex items-center justify-center gap-2"
-                            >
-                                <ChevronLeft size={20} /> Back
-                            </button>
-                        )}
-
-                        {currentStep < 3 ? (
-                            <button
-                                onClick={nextStep}
-                                className="flex-1 bg-yellow-400 text-black py-4 rounded-xl font-bold hover:bg-yellow-300 transition-all flex items-center justify-center gap-2"
-                            >
-                                Next Step <ChevronRight size={20} />
-                            </button>
-                        ) : (
-                            <button
-                                onClick={handleSubmit}
-                                disabled={isSubmitting}
-                                className="flex-1 bg-yellow-400 text-black py-4 rounded-xl font-bold hover:bg-yellow-300 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {isSubmitting ? "Launching..." : "Launch Event"}
-                            </button>
-                        )}
-                    </div>
-
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
     );
