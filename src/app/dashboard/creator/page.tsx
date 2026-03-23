@@ -69,8 +69,9 @@ interface TableData {
 }
 
 interface FullEventData {
-    events: EventDetails;
-    table: TableData[];
+    events?: EventDetails;
+    event?: any;
+    table?: TableData[];
 }
 
 interface AdminData {
@@ -137,6 +138,7 @@ const EditEventModal = ({
     onUpdate: (eventDetails: EventDetails, tables: TableData[], imageFile: File | null) => Promise<void>;
 }) => {
     const [details, setDetails] = useState<EventDetails | null>({
+        id: '',
         event_name: '',
         category: '',
         date: '',
@@ -144,11 +146,11 @@ const EditEventModal = ({
         time_out: '',
         event_address: '',
         summary: '',
-        price: 0,
-        vip_price: 0,
-        vvip_price: 0,
-        vvvip_price: 0,
-        table_price: 0,
+        price: '0',
+        vip_price: '0',
+        vvip_price: '0',
+        vvvip_price: '0',
+        table_price: '0',
         bank: '',
         account_name: '',
         account_number: '',
