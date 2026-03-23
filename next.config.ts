@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'app.echelontix.com.ng',
+      },
+      {
+        protocol: 'https',
+        hostname: 'echelon-backend.onrender.com/',
       }
     ],
   },
