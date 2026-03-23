@@ -1,7 +1,5 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   images: {
     remotePatterns: [
       {
@@ -11,6 +9,8 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'app.samdavweb.org.ng',
+        port: '',
+        pathname: '/uploads/**', // Allows any image from the /uploads/ directory
       },
       {
         protocol: 'https',
@@ -20,4 +20,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig;

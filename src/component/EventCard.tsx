@@ -66,8 +66,20 @@ const EventCard = ({
       }`}
     >
       {getStatusBadge()}
+
+      {image ? (
+        <div className="w-full h-48 overflow-hidden rounded-t-lg">
+          <img
+            src={image.startsWith("http") ? image : `${process.env.NEXT_PUBLIC_API_URL}/${image}`}
+            alt={title}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      ) : (
+        <div className="text-4xl mb-4 text-center mt-6">🎫</div>
+      )}
+
       <div className="p-6">
-        <div className="text-4xl mb-4 text-center">{image}</div>
 
         <div className="mb-2">
           <span className="text-xs text-purple-400 bg-purple-900/30 px-2 py-1 rounded-full">

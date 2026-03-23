@@ -79,11 +79,15 @@ const SignupForm: React.FC = () => {
     };
 
     try {
-      const signupUrl = process.env.NEXT_PUBLIC_API_URL;
-      await axios.post(`${signupUrl}auth/signup`, fullAccountData);
+      const signupUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
+      await axios.post(`${signupUrl}/auth/signup`, fullAccountData);
       setShowVerificationModal(true);
     } catch (err: any) {
-      setError(err.response?.data?.message || "An error occurred during sign-up.");
+      if (err.response?.data?.detail) {
+        setError(typeof err.response.data.detail === 'string' ? err.response.data.detail : JSON.stringify(err.response.data.detail));
+      } else {
+        setError(err.response?.data?.message || "An error occurred during sign-up.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -95,37 +99,64 @@ const SignupForm: React.FC = () => {
     setIsVerifying(true);
 
     try {
-      const verifyUrl = process.env.NEXT_PUBLIC_API_URL!;
-      const verifyResponse = await axios.post(`${verifyUrl}auth/verify`, {
+      const verifyUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') + '';
+      const verifyResponse = await axios.post(`${verifyUrl}/auth/verify-code`, {
         email: formData.email,
         code: verificationCode,
       });
 
-      const userId = verifyResponse.data?.profile?.user_id;
+      // Automatically login to get the required access token
+      const loginResponse = await axios.post(`${verifyUrl}/auth/login`, {
+        email: formData.email,
+        password: formData.password,
+      });
 
-      if (!userId) {
-        throw new Error("Verification succeeded, but user ID was not returned.");
+      const token = loginResponse.data?.access_token;
+      if (!token) {
+        throw new Error("Verification succeeded, but no authentication token was returned to create profile.");
       }
-      const profileBaseUrl = process.env.NEXT_PUBLIC_API_URL
-      const profileUrl = role === 'organizer'
-        ? `${profileBaseUrl}profile/creatorProfiles`
-        : `${profileBaseUrl}profile/userProfiles`;
 
-      const profilePayload = {
-        user_id: userId,
+      const profileBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
+      const profileUrl = role === 'organizer'
+        ? `${profileBaseUrl}/profile/creatorProfile`
+        : `${profileBaseUrl}/profile/userProfile`;
+
+      const profilePayload: Record<string, string> = {
         name: `${formData.firstName} ${formData.lastName}`,
         email: formData.email,
-        phoneNo: formData.phoneNo,
+        phone_no: formData.phoneNo, // Match the schema's snake_case
         address: formData.address,
-        ...(role === 'organizer' && { brandName: formData.brandName }),
       };
 
-      await axios.post(profileUrl, profilePayload);
+      if (role === 'organizer' && formData.brandName) {
+        profilePayload.brand_name = formData.brandName; // Match the schema's snake_case
+      }
+
+      // Convert payload to application/x-www-form-urlencoded format
+      const formEncodedData = new URLSearchParams(profilePayload);
+
+      console.log('Creating profile at:', profileUrl);
+      console.log('Profile payload:', profilePayload);
+      console.log('Token:', token);
+
+      await axios.post(profileUrl, formEncodedData.toString(), {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Authorization: `Bearer ${token}`
+        }
+      });
 
       alert("Account and profile created successfully! Redirecting to login...");
       router.push('/auth/signin');
     } catch (err: any) {
-      setError(err.response?.data?.message || "Verification or profile creation failed.");
+      console.error('Profile creation error:', err);
+      if (err.response?.data?.detail) {
+        setError(typeof err.response.data.detail === 'string' ? err.response.data.detail : JSON.stringify(err.response.data.detail));
+      } else if (err.response?.status === 404) {
+        setError(`Profile endpoint not found (404). Tried: ${role === 'organizer' ? '/profile/creatorProfile' : '/profile/userProfile'}`);
+      } else {
+        setError(err.response?.data?.message || err.message || "Verification or profile creation failed.");
+      }
     } finally {
       setIsVerifying(false);
     }

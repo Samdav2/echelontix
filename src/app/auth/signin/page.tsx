@@ -5,7 +5,16 @@ import { useRouter } from 'next/navigation'; // Corrected: Use 'next/navigation'
 import { Eye, EyeOff } from 'lucide-react';
 import axios from 'axios';
 
-// A custom component to display API feedback (errors or success messages)
+// ✅ Define expected structure of login response
+interface LoginResponse {
+  profile: {
+    brandname?: string;
+    [key: string]: any; // To allow other optional fields
+  };
+  token?: string;
+}
+
+// ✅ Alert Component
 const Alert: React.FC<{ message: string; type: 'error' | 'success' }> = ({ message, type }) => {
   if (!message) return null;
   const baseClasses = 'w-full text-center p-3 rounded-lg mb-4 text-sm';
@@ -23,11 +32,8 @@ const Alert: React.FC<{ message: string; type: 'error' | 'success' }> = ({ messa
 const SignInPage: React.FC = () => {
   const router = useRouter(); // Initialize the router
 
-  // State for form inputs
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
-  // State for UI feedback
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,9 +41,6 @@ const SignInPage: React.FC = () => {
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
-  /**
-   * Handles the form submission, saves user data, and redirects.
-   */
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
@@ -52,35 +55,63 @@ const SignInPage: React.FC = () => {
 
     try {
       const user = { email, password };
-      const loginUrl = process.env.NEXT_PUBLIC_API_URL;
+      const loginUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
 
-      const response = await axios.post(`${loginUrl}auth/login`, user);
+      const response = await axios.post(`${loginUrl}/auth/login`, user);
 
       if (response.data) {
-        setSuccessMessage("Login Successful! Redirecting...");
-        console.log(response.data)
+        setSuccessMessage('Login Successful! Redirecting...');
 
+        const { access_token, user_id } = response.data;
 
-        localStorage.setItem('userData', JSON.stringify(response.data.profile));
+        // Store token first so getProfile can use it in the interceptor
+        if (access_token) {
+          localStorage.setItem('token', access_token);
+        }
 
+        // Now fetch the full profile to get brandname
+        try {
+          const profileResponse = await axios.get(`${loginUrl}/profile/getProfile`, {
+            headers: {
+              Authorization: `Bearer ${access_token}`
+            }
+          });
 
-        const redirectPath = response.data.profile.brandname
-          ? '/dashboard/creator'
-          : '/dashboard/attendee';
+          const fullProfile = profileResponse.data;
+          const userData = {
+            ...fullProfile,
+            user_id: fullProfile.user_id || user_id,
+            brandname: fullProfile.brandname || fullProfile.brand_name || ''
+          };
 
-        // Redirect the user after a short delay
-        setTimeout(() => {
-          router.push(redirectPath);
-        }, 1500);
+          localStorage.setItem('userData', JSON.stringify(userData));
+
+          const hasBrand = userData.brandname && String(userData.brandname).trim() !== '';
+          const redirectPath = hasBrand
+            ? '/dashboard/creator'
+            : '/dashboard/attendee';
+
+          setTimeout(() => {
+            router.push(redirectPath);
+          }, 1500);
+        } catch (profileErr: any) {
+          console.error('Failed to fetch profile:', profileErr);
+          setError('Login successful but failed to load profile data. Please try again.');
+          setIsLoading(false);
+        }
       }
     } catch (err: any) {
-      if (err.response && err.response.data && err.response.data.message) {
+      if (err.response?.data?.detail) {
+        // FastAPI validation errors return an array of details sometimes, or a string
+        const detail = err.response.data.detail;
+        setError(typeof detail === 'string' ? detail : 'Invalid credentials provided.');
+      } else if (err.response?.data?.message) {
         setError(err.response.data.message);
       } else {
         setError('Invalid credentials or server error. Please try again.');
       }
     } finally {
-
+      setIsLoading(false);
     }
   };
 
@@ -93,7 +124,7 @@ const SignInPage: React.FC = () => {
         {/* Logo */}
         <div className="mx-auto mb-6 text-center">
           <div className="w-28 h-28 mx-auto rounded-full bg-black flex items-center justify-center">
-            <img src="/assets/capo.svg" alt="Logo" className="h-16 object-contain"/>
+            <img src="/assets/capo.svg" alt="Logo" className="h-16 object-contain" />
           </div>
         </div>
 
@@ -113,7 +144,7 @@ const SignInPage: React.FC = () => {
             autoComplete="email"
           />
 
-          {/* Password Input */}
+          {/* Password */}
           <div className="relative">
             <input
               type={showPassword ? 'text' : 'password'}
@@ -124,22 +155,26 @@ const SignInPage: React.FC = () => {
               required
               autoComplete="current-password"
             />
-            <button type="button" onClick={togglePasswordVisibility} className="absolute right-3 top-3.5" aria-label={showPassword ? "Hide password" : "Show password"}>
+            <button
+              type="button"
+              onClick={togglePasswordVisibility}
+              className="absolute right-3 top-3.5"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
               {showPassword ? <EyeOff className="w-5 h-5 text-gray-300" /> : <Eye className="w-5 h-5 text-gray-300" />}
             </button>
           </div>
 
-          {/* Remember me */}
           <label className="flex items-center mb-4 space-x-2 text-sm text-white">
             <input type="checkbox" className="form-checkbox accent-white bg-transparent" defaultChecked />
             <span>Remember me</span>
           </label>
 
-          {/* Feedback Messages */}
+          {/* Alerts */}
           <Alert message={error!} type="error" />
           <Alert message={successMessage!} type="success" />
 
-          {/* Sign In Button */}
+          {/* Button */}
           <button
             type="submit"
             className="w-full bg-white text-black font-semibold py-3 rounded-full hover:bg-gray-200 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
@@ -149,7 +184,6 @@ const SignInPage: React.FC = () => {
           </button>
         </form>
 
-        {/* Divider */}
         <div className="flex items-center my-6">
           <div className="flex-grow border-t border-gray-400" />
           <span className="px-2 text-sm text-blue-400">
@@ -158,7 +192,6 @@ const SignInPage: React.FC = () => {
           <div className="flex-grow border-t border-gray-400" />
         </div>
 
-        {/* Footer */}
         <p className="text-sm text-white mt-6 text-center">
           Don't have an account?{' '}
           <a href="/choose-role" className="text-blue-400 font-semibold underline">Sign Up</a>

@@ -73,11 +73,21 @@ interface FullEventData {
     table: TableData[];
 }
 
+interface AdminData {
+    brand: string;
+    event: [];
+    totalEvents: number;
+    totalRevenue: number;
+    totalTicket: number;
+}
+
+let revenue_core = 0
+let totalAttendees_core = 0
+let map_event = Array()
 
 type EventStatus = 'live' | 'upcoming' | 'ended';
 
 // --- UI Sub-components ---
-const base_url = process.env.NEXT_PUBLIC_API_URL;
 
 const StatCard = ({ title, value, icon, colorClass, trend }: { title: string; value: string; icon: React.ReactNode; colorClass: string, trend?: string }) => (
   <motion.div
@@ -113,6 +123,7 @@ const EventListSkeleton = () => (
     </div>
 );
 
+
 // --- Edit Modal Component ---
 const EditEventModal = ({
     isOpen,
@@ -125,7 +136,25 @@ const EditEventModal = ({
     eventData: FullEventData | null;
     onUpdate: (eventDetails: EventDetails, tables: TableData[], imageFile: File | null) => Promise<void>;
 }) => {
-    const [details, setDetails] = useState<EventDetails | null>(null);
+    const [details, setDetails] = useState<EventDetails | null>({
+        event_name: '',
+        category: '',
+        date: '',
+        time_in: '',
+        time_out: '',
+        event_address: '',
+        summary: '',
+        price: 0,
+        vip_price: 0,
+        vvip_price: 0,
+        vvvip_price: 0,
+        table_price: 0,
+        bank: '',
+        account_name: '',
+        account_number: '',
+        brand_name: '',
+        picture: null
+    });
     const [tables, setTables] = useState<TableData[]>([]);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -134,11 +163,47 @@ const EditEventModal = ({
 
     useEffect(() => {
         if (eventData) {
-            const formattedDate = new Date(eventData.events.date).toISOString().split('T')[0];
-            setDetails({ ...eventData.events, date: formattedDate });
+            console.log('EditEventModal - eventData received:', eventData);
+            // Handle response structure: { event: [...] } or { events: {...} } or direct {...}
+            let eventInfo: any;
+
+            if (eventData.event && Array.isArray(eventData.event)) {
+                // Response is { event: [{ ... }] } - take first item from array
+                eventInfo = eventData.event[0];
+            } else if (eventData.events) {
+                // Response is { events: { ... } }
+                eventInfo = eventData.events;
+            } else {
+                // Response is direct event object
+                eventInfo = eventData;
+            }
+
+            console.log('EditEventModal - eventInfo after unwrap:', eventInfo);
+
+            // Handle date formatting with validation
+            let formattedDate = '';
+            if (eventInfo?.date) {
+                try {
+                    const dateObj = new Date(eventInfo.date);
+                    if (!isNaN(dateObj.getTime())) {
+                        formattedDate = dateObj.toISOString().split('T')[0];
+                    } else {
+                        formattedDate = eventInfo.date; // Use as-is if already formatted
+                    }
+                } catch (e) {
+                    formattedDate = eventInfo.date; // Fallback
+                }
+            }
+
+            console.log('EditEventModal - setting details:', { ...eventInfo, date: formattedDate });
+            setDetails({ ...eventInfo, date: formattedDate });
             setTables(eventData.table || []);
-            if (eventData.events.picture) {
-                setImagePreview(`${ base_url}${eventData.events.picture}`);
+            if (eventInfo?.picture) {
+                // Handle both Cloudinary URLs and legacy paths
+                const imageUrl = eventInfo.picture.startsWith("http")
+                  ? eventInfo.picture
+                  : `${process.env.NEXT_PUBLIC_API_URL}/${eventInfo.picture}`;
+                setImagePreview(imageUrl);
             } else {
                 setImagePreview(null);
             }
@@ -221,8 +286,8 @@ const EditEventModal = ({
                              <div>
                                 <h3 className="text-lg font-semibold text-yellow-400 mb-4 flex items-center gap-2"><Calendar size={20}/> Event Information</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <input type="text" name="event_name" value={details.event_name} onChange={handleDetailChange} placeholder="Event Name" className="w-full p-3 rounded-lg bg-gray-800 text-white placeholder-gray-400 border border-transparent focus:border-yellow-400 outline-none" />
-                                    <select name="category" value={details.category} onChange={handleDetailChange} className="w-full p-3 rounded-lg bg-gray-800 text-white border border-transparent focus:border-yellow-400 outline-none">
+                                    <input type="text" name="event_name" value={details?.event_name || ''} onChange={handleDetailChange} placeholder="Event Name" className="w-full p-3 rounded-lg bg-gray-800 text-white placeholder-gray-400 border border-transparent focus:border-yellow-400 outline-none" />
+                                    <select name="category" value={details?.category || ''} onChange={handleDetailChange} className="w-full p-3 rounded-lg bg-gray-800 text-white border border-transparent focus:border-yellow-400 outline-none">
                                         <option value="">Select Category</option>
                                         <option value="Music">Music</option>
                                         <option value="Conference">Conference</option>
@@ -230,23 +295,23 @@ const EditEventModal = ({
                                         <option value="Sport">Sport</option>
                                         <option value="Art">Art</option>
                                     </select>
-                                    <input type="date" name="date" value={details.date} onChange={handleDetailChange} className="w-full p-3 rounded-lg bg-gray-800 text-white" />
-                                    <input type="time" name="time_in" value={details.time_in} onChange={handleDetailChange} className="w-full p-3 rounded-lg bg-gray-800 text-white" />
-                                    <input type="time" name="time_out" value={details.time_out} onChange={handleDetailChange} className="w-full p-3 rounded-lg bg-gray-800 text-white" />
-                                    <input type="text" name="event_address" value={details.event_address} onChange={handleDetailChange} placeholder="Event Address" className="w-full p-3 rounded-lg bg-gray-800 text-white md:col-span-2" />
+                                    <input type="date" name="date" value={details?.date || ''} onChange={handleDetailChange} className="w-full p-3 rounded-lg bg-gray-800 text-white" />
+                                    <input type="time" name="time_in" value={details?.time_in || ''} onChange={handleDetailChange} className="w-full p-3 rounded-lg bg-gray-800 text-white" />
+                                    <input type="time" name="time_out" value={details?.time_out || ''} onChange={handleDetailChange} className="w-full p-3 rounded-lg bg-gray-800 text-white" />
+                                    <input type="text" name="event_address" value={details?.event_address || ''} onChange={handleDetailChange} placeholder="Event Address" className="w-full p-3 rounded-lg bg-gray-800 text-white md:col-span-2" />
                                 </div>
-                                <textarea name="summary" value={details.summary} onChange={handleDetailChange} placeholder="Event Summary" rows={4} className="w-full p-3 mt-4 rounded-lg bg-gray-800 text-white" />
+                                <textarea name="summary" value={details?.summary || ''} onChange={handleDetailChange} placeholder="Event Summary" rows={4} className="w-full p-3 mt-4 rounded-lg bg-gray-800 text-white" />
                             </div>
 
                             {/* --- Ticket Pricing Section --- */}
                             <div>
                                 <h3 className="text-lg font-semibold text-yellow-400 mb-4 flex items-center gap-2"><Ticket size={20}/> Ticket Pricing (₦)</h3>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <input type="number" name="price" value={details.price} onChange={handleDetailChange} placeholder="Regular" className="w-full p-3 rounded-lg bg-gray-800 text-white" />
-                                    <input type="number" name="vip_price" value={details.vip_price} onChange={handleDetailChange} placeholder="VIP" className="w-full p-3 rounded-lg bg-gray-800 text-white" />
-                                    <input type="number" name="vvip_price" value={details.vvip_price} onChange={handleDetailChange} placeholder="VVIP" className="w-full p-3 rounded-lg bg-gray-800 text-white" />
-                                    <input type="number" name="vvvip_price" value={details.vvvip_price} onChange={handleDetailChange} placeholder="VVVIP" className="w-full p-3 rounded-lg bg-gray-800 text-white" />
-                                    <input type="number" name="table_price" value={details.table_price} onChange={handleDetailChange} placeholder="General Table" className="w-full p-3 rounded-lg bg-gray-800 text-white col-span-2 md:col-span-4" />
+                                    <input type="number" name="price" value={details?.price || 0} onChange={handleDetailChange} placeholder="Regular" className="w-full p-3 rounded-lg bg-gray-800 text-white" />
+                                    <input type="number" name="vip_price" value={details?.vip_price || 0} onChange={handleDetailChange} placeholder="VIP" className="w-full p-3 rounded-lg bg-gray-800 text-white" />
+                                    <input type="number" name="vvip_price" value={details?.vvip_price || 0} onChange={handleDetailChange} placeholder="VVIP" className="w-full p-3 rounded-lg bg-gray-800 text-white" />
+                                    <input type="number" name="vvvip_price" value={details?.vvvip_price || 0} onChange={handleDetailChange} placeholder="VVVIP" className="w-full p-3 rounded-lg bg-gray-800 text-white" />
+                                    <input type="number" name="table_price" value={details?.table_price || 0} onChange={handleDetailChange} placeholder="General Table" className="w-full p-3 rounded-lg bg-gray-800 text-white col-span-2 md:col-span-4" />
                                 </div>
                             </div>
 
@@ -254,9 +319,9 @@ const EditEventModal = ({
                              <div>
                                 <h3 className="text-lg font-semibold text-yellow-400 mb-4 flex items-center gap-2"><Banknote size={20}/> Payout Information</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <input type="text" name="bank" value={details.bank} onChange={handleDetailChange} placeholder="Bank Name" className="w-full p-3 rounded-lg bg-gray-800 text-white" />
-                                    <input type="text" name="account_name" value={details.account_name} onChange={handleDetailChange} placeholder="Account Name" className="w-full p-3 rounded-lg bg-gray-800 text-white" />
-                                    <input type="text" name="account_number" value={details.account_number} onChange={handleDetailChange} placeholder="Account Number" className="w-full p-3 rounded-lg bg-gray-800 text-white" />
+                                    <input type="text" name="bank" value={details?.bank || ''} onChange={handleDetailChange} placeholder="Bank Name" className="w-full p-3 rounded-lg bg-gray-800 text-white" />
+                                    <input type="text" name="account_name" value={details?.account_name || ''} onChange={handleDetailChange} placeholder="Account Name" className="w-full p-3 rounded-lg bg-gray-800 text-white" />
+                                    <input type="text" name="account_number" value={details?.account_number || ''} onChange={handleDetailChange} placeholder="Account Number" className="w-full p-3 rounded-lg bg-gray-800 text-white" />
                                 </div>
                             </div>
 
@@ -300,77 +365,144 @@ export default function CreatorDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isEventsLoading, setIsEventsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [admin, setAdmin] = useState<AdminData[]>([]);
+
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<FullEventData | null>(null);
 
-  const url = process.env.NEXT_PUBLIC_API_URL;
+  const url = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
 
-  useEffect(() => {
-    const storedUserData = localStorage.getItem('userData');
-    if (storedUserData) {
-      const parsedData = JSON.parse(storedUserData);
-      if (parsedData?.brandname) {
-        setCreatorData(parsedData);
+    useEffect(() => {
+      const storedUserData = localStorage.getItem('userData');
+      if (storedUserData) {
+        const parsedData = JSON.parse(storedUserData);
+        const hasBrand = parsedData?.brandname && String(parsedData.brandname).trim() !== '';
+        if (hasBrand) {
+          setCreatorData(parsedData);
+        } else if (parsedData?.user_id) {
+          // Attendee user trying to access creator dashboard - redirect them
+          router.push('/dashboard/attendee');
+        } else {
+          // No user data at all - go to login
+          router.push('/auth/signin');
+        }
       } else {
         router.push('/auth/signin');
       }
-    } else {
-      router.push('/auth/signin');
-    }
-    setIsLoading(false);
-  }, [router]);
+      setIsLoading(false);
+      }, [router]);
 
   useEffect(() => {
-    if (creatorData) {
+    if (creatorData?.brandname) {
+      console.log('Creator data loaded, brandname:', creatorData.brandname);
       fetchEvents();
+      fetchDash();
     }
   }, [creatorData]);
 
   const fetchEvents = async () => {
-    if (!creatorData) return;
+    if (!creatorData?.brandname) {
+      setError("Creator brand name not found. Please log in again.");
+      return;
+    }
     setIsEventsLoading(true);
     setError(null);
     try {
-      const response = await axios.get(`${url}event/getEventCreated?brand=${encodeURIComponent(creatorData.brandname)}`);
+      const brandParam = String(creatorData.brandname).trim();
+      console.log('Fetching events for brand:', brandParam);
+      const response = await axios.get(`${url}/event/getEventCreated?brand=${encodeURIComponent(brandParam)}`);
+      console.log('Events response:', response.data);
       setEvents(Array.isArray(response.data) ? response.data : []);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to fetch events:", err);
-      setError("Could not load your events.");
-      setEvents([]);
+      // If 404, it might mean no events exist for this brand yet - that's ok
+      if (err.response?.status === 404) {
+        console.log('No events found for brand (404 is normal if no events created yet)');
+        setEvents([]);
+        setError(null);
+      } else {
+        const errMsg = err.response?.data?.detail || "Could not load your events.";
+        setError(errMsg);
+        setEvents([]);
+      }
     } finally {
       setIsEventsLoading(false);
     }
   };
 
-  const handleEditClick = async (eventId: string) => {
+  const fetchDash = async () => {
+    if (!creatorData?.brandname) {
+      setError("Creator brand name not found. Please log in again.");
+      return;
+    }
+    setError(null);
     try {
-        const response = await axios.get<FullEventData>(`${url}event/getEvent?eventId=${eventId}`);
-        if (response.data) {
-            setEditingEvent(response.data);
-            setIsEditModalOpen(true);
-        } else {
-            throw new Error("Event data not found in response");
-        }
-    } catch (err) {
-        console.error("Failed to fetch event details for editing:", err);
-        alert("Could not load event details. Please try again.");
+      const brandParam = String(creatorData.brandname).trim();
+      console.log('Fetching dashboard for brand:', brandParam);
+      const response = await axios.get(`${url}/event/getDashboard?brand=${encodeURIComponent(brandParam)}`);
+      console.log('Dashboard response:', response.data);
+      revenue_core = response.data.totalRevenue
+      totalAttendees_core = response.data.totalTickets
+      map_event = response.data.events
+
+      setAdmin(Array.isArray(response.data) ? response.data : []);
+    } catch (err: any) {
+      console.error("Failed to fetch dashboard:", err);
+      // If 404, it might mean no dashboard data yet - that's ok
+      if (err.response?.status === 404) {
+        console.log('No dashboard data found (404 is normal if no events created yet)');
+        setAdmin([]);
+        setError(null);
+      } else {
+        const errMsg = err.response?.data?.detail || "Could not load your events.";
+        setError(errMsg);
+        setAdmin([]);
+      }
+    } finally {
+      // setIsEventsLoading(false);
     }
   };
+  useEffect(() => {
+    fetchDash();
+  }, [creatorData]);
 
-  /**
-   * Professionally handles the event update process by making two distinct API calls.
-   * This version sends event data as a standard JSON object and does not handle file uploads.
-   */
+  // // // // /**
+
+   const handleEditClick = async (eventId: string) => {
+      try {
+        const response = await axios.get<FullEventData>(`${url}/event/getEvent?eventId=${eventId}`);
+        if (response.data) {
+           setEditingEvent(response.data);
+           setIsEditModalOpen(true);
+       } else {
+          throw new Error("Event data not found in response");
+        }
+    } catch (err) {
+         console.error("Failed to fetch event details for editing:", err);
+         alert("Could not load event details. Please try again.");
+   }
+  };
+
+  // // // // /**
+  // // // //  * Professionally handles the event update process by making two distinct API calls.
+  // // // //  * This version sends event data as a standard JSON object and does not handle file uploads.
+
   const handleUpdateEvent = async (eventDetails: EventDetails, tables: TableData[], imageFile: File | null) => {
     try {
+        // Validate required fields
+        if (!eventDetails.account_name?.trim() || !eventDetails.account_number?.trim() || !eventDetails.bank?.trim()) {
+            alert("Please fill in all payout information (Bank, Account Name, Account Number)");
+            return;
+        }
+
         // --- Step 1: Update Event Tables (Using User's Provided Logic) ---
         if (tables.length > 0) {
             console.log(`Updating ${tables.length} tables for event ID: ${eventDetails.id}`);
             // RESTORED: This logic is exactly as provided by the user.
             // Note: The backend route for this should be '/updateTableCreation' and it should
             // expect the eventId within the payload if it's not in the URL.
-            const updateTablesUrl = `${url}event/updateTableCreation/`;
+            const updateTablesUrl = `${url}/event/updateTableCreation/`;
             const tablesPayload = {
                 eventId: eventDetails.id, // Ensure the eventId is sent if the backend needs it
                 tables: tables.map(t => ({
@@ -390,33 +522,36 @@ export default function CreatorDashboard() {
             console.warn("Image upload is being skipped because the current implementation uses JSON. A separate endpoint is required for file uploads.");
         }
 
-        console.log(`Updating event details (JSON) for event ID: ${eventDetails.id}`);
+        console.log(`Updating event details for event ID: ${eventDetails.id}`);
         // The URL must contain the event ID for a RESTful PUT request.
-        const updateEventUrl = `${url}event/updateEvent/`;
+        const updateEventUrl = `${url}/event/updateEvent`;
 
-        const eventDetailsPayload = {
-            // We no longer send the eventId in the body, as it's in the URL.
-            eventId: eventDetails.id,
-            brand_name: eventDetails.brand_name,
-            eventName: eventDetails.event_name,
-            eventAddress: eventDetails.event_address,
-            timeIn: eventDetails.time_in,
-            timeOut: eventDetails.time_out,
-            summary: eventDetails.summary,
-            price: eventDetails.price || '0',
-            category: eventDetails.category,
-            date: eventDetails.date,
-            account_name: eventDetails.account_name,
-            account_number: eventDetails.account_number,
-            bank: eventDetails.bank,
-            vip_price: eventDetails.vip_price || '0',
-            vvip_price: eventDetails.vvip_price || '0',
-            table_price: eventDetails.table_price || '0',
-            vvvip_price: eventDetails.vvvip_price || '0',
-        };
+        const formData = new FormData();
+        formData.append('event_id', eventDetails.id.toString());
+        formData.append('brand_name', eventDetails.brand_name || '');
+        formData.append('event_name', eventDetails.event_name || '');
+        formData.append('event_address', eventDetails.event_address || '');
+        formData.append('time_in', eventDetails.time_in || '');
+        formData.append('time_out', eventDetails.time_out || '');
+        formData.append('summary', eventDetails.summary || '');
+        formData.append('price', eventDetails.price?.toString() || '0');
+        formData.append('category', eventDetails.category || '');
+        formData.append('date', eventDetails.date || '');
+        formData.append('account_name', eventDetails.account_name || '');
+        formData.append('account_number', eventDetails.account_number || '');
+        formData.append('bank', eventDetails.bank || '');
+        formData.append('vip_price', eventDetails.vip_price?.toString() || '0');
+        formData.append('vvip_price', eventDetails.vvip_price?.toString() || '0');
+        formData.append('table_price', eventDetails.table_price?.toString() || '0');
+        formData.append('vvvip_price', eventDetails.vvvip_price?.toString() || '0');
 
-        // Axios will automatically set the Content-Type to 'application/json' for this object.
-        await axios.put(updateEventUrl, eventDetailsPayload);
+        if (imageFile) {
+            formData.append('file', imageFile);
+        }
+
+        await axios.put(updateEventUrl, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
 
         alert("Event updated successfully!");
         setIsEditModalOpen(false);
@@ -438,7 +573,12 @@ export default function CreatorDashboard() {
     const originalEvents = [...events];
     setEvents(events.filter(e => e.id !== eventId));
     try {
-      await axios.delete(`${url}event/deleteEvent`, { data: { eventId } });
+      await axios.delete(`${url}/event/deleteEvent`, {
+        data: new URLSearchParams({ event_id: eventId.toString() }).toString(),
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      });
     } catch (err) {
       console.error('Deletion error:', err);
       alert('Error deleting event. Restoring list.');
@@ -471,8 +611,8 @@ export default function CreatorDashboard() {
   const handleExploreEventClick = () => router.push('/explore');
   const handleProfileUpdateClick = () => router.push('/update');
 
-  const totalRevenue = useMemo(() => events.reduce((sum, event) => sum + (event.revenue || 0), 0), [events]);
-  const totalAttendees = useMemo(() => events.reduce((sum, event) => sum + (event.attendees || 0), 0), [events]);
+  const totalRevenue = revenue_core
+  const totalAttendees = totalAttendees_core
   const activeEvents = useMemo(() => events.filter(event => getEventStatus(event.date) !== 'ended').length, [events]);
   const stats = { totalRevenue, totalAttendees, activeEvents };
 
@@ -528,8 +668,8 @@ export default function CreatorDashboard() {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-10">
-            <StatCard title="Total Revenue" value={`₦${stats.totalRevenue.toLocaleString()}`} icon={<TrendingUp />} colorClass="text-green-400" trend="+12% this month" />
-            <StatCard title="Total Attendees" value={stats.totalAttendees.toLocaleString()} icon={<Users />} colorClass="text-blue-400" />
+            <StatCard title="Total Revenue" value={`₦${totalRevenue.toLocaleString()}`} icon={<TrendingUp />} colorClass="text-green-400" trend="+12% this month" />
+            <StatCard title="Total Attendees" value={totalAttendees.toLocaleString()} icon={<Users />} colorClass="text-blue-400" />
             <StatCard title="Active Events" value={stats.activeEvents.toString()} icon={<Calendar />} colorClass="text-purple-400" />
           </div>
 
@@ -562,7 +702,7 @@ export default function CreatorDashboard() {
             ) : (
               <div className="space-y-4">
                 <AnimatePresence>
-                  {events.map(event => {
+                  {map_event.map(event => {
                     const status = getEventStatus(event.date);
                     const statusInfo = getStatusInfo(status);
                     return (
@@ -576,7 +716,7 @@ export default function CreatorDashboard() {
                         className="flex flex-col md:flex-row items-center gap-6 p-4 bg-black/20 border border-white/10 rounded-2xl hover:bg-black/40 transition-colors duration-300"
                       >
                         <img
-                          src={event.picture ? `${ base_url}${event.picture}` : 'https://placehold.co/128x128/1a1a1a/ffffff?text=Event'}
+                          src={event.picture ? (event.picture.startsWith("http") ? event.picture : `${process.env.NEXT_PUBLIC_API_URL}/${event.picture}`) : 'https://placehold.co/128x128/1a1a1a/ffffff?text=Event'}
                           alt={event.event_name}
                           className="w-full md:w-32 h-32 rounded-lg object-cover"
                           onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/128x128/1a1a1a/ffffff?text=Event' }}
@@ -628,4 +768,4 @@ export default function CreatorDashboard() {
       </div>
     </>
   );
-}
+};

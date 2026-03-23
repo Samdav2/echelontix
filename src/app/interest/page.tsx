@@ -59,7 +59,7 @@ interface EventData {
 type EventStatus = 'live' | 'upcoming' | 'ended';
 
 // --- UI Sub-components ---
-const base_url = process.env.NEXT_PUBLIC_API_URL;
+
 const EventCard = ({ event, status }: { event: EventData, status: EventStatus }) => {
     const router = useRouter();
     const handleEventClick = () => {
@@ -82,7 +82,7 @@ const EventCard = ({ event, status }: { event: EventData, status: EventStatus })
             className={`rounded-2xl overflow-hidden bg-black/30 border border-white/10 shadow-lg group transition-all duration-300 ${status !== 'ended' ? 'cursor-pointer hover:border-white/30 hover:shadow-2xl hover:-translate-y-1' : 'opacity-60'}`}
         >
             <div className="relative w-full h-48">
-                <img src={event.picture ? `${base_url}${event.picture}` : 'https://placehold.co/400x300/1a1a1a/ffffff?text=Event'} alt={event.event_name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                <img src={event.picture ? (event.picture.startsWith("http") ? event.picture : `${process.env.NEXT_PUBLIC_API_URL}/${event.picture}`) : 'https://placehold.co/400x300/1a1a1a/ffffff?text=Event'} alt={event.event_name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
                 <div className={`absolute top-3 right-3 text-xs font-semibold px-3 py-1 rounded-full backdrop-blur-md border ${statusStyles[status]}`}>
                     {status.charAt(0).toUpperCase() + status.slice(1)}
                 </div>
@@ -138,10 +138,11 @@ const InterestModal = ({ isOpen, onClose, onSave, userId }: { isOpen: boolean, o
         setIsSaving(true);
         setError(null);
         try {
-            const url = process.env.NEXT_PUBLIC_ADD_USER_INTERESTS!;
-            await axios.post(url, {
-                user_id: userId,
-                interests: selectedInterests,
+            const url = (process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || '') + '/user/addInterests';
+            const params = new URLSearchParams();
+            selectedInterests.forEach(interest => params.append('interests', interest));
+            await axios.post(url, params.toString(), {
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
             });
             onSave();
             onClose();
@@ -214,21 +215,22 @@ export default function EventSuggestionsPage() {
             } catch (e) { router.push('/auth/signin'); }
         } else { router.push('/auth/signin'); }
     }, [router]);
-    const url = process.env.NEXT_PUBLIC_API_URL
+    const url = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
     const fetchInitialData = useCallback(async () => {
         if (!userData) return;
         setIsLoading(true);
         setError(null);
         try {
-            const interestsUrl = `${url}user/events/${userData.user_id}`;
-            const allEventsUrl =   `${url}event/getAllEvent`;
+            const interestsUrl = `${url}/user/interestedEvents`;
+            const allEventsUrl =   `${url}/event/getAllEvent`;
 
             const [interestsResponse] = await Promise.all([
                 axios.get(interestsUrl)
             ]);
 
             // Assuming interests are returned in a specific structure
-            const interests = interestsResponse.data.events || [];
+            const responseData = interestsResponse.data;
+            const interests = Array.isArray(responseData) ? responseData : (responseData?.events || responseData?.data || []);
             console.log("Intersts", interests)
             setUserInterests(interests);
 

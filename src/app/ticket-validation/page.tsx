@@ -128,31 +128,53 @@ export default function TicketValidationPage() {
     setValidationResult(null);
 
     try {
-      const verifyUrl = process.env.NEXT_PUBLIC_API_URL;
-      const verifyResponse = await axios.post(`${verifyUrl}event/verifytoken`, { token: code });
+      const verifyUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
+      const verifyResponse = await axios.post(`${verifyUrl}/event/verifyToken`, new URLSearchParams({ token: code }).toString(), {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      });
 
-      const eventDetails: EventDetails = verifyResponse.data.eventDetails;
-      if (verifyResponse.data.userProfile) {
-        eventDetails.name = verifyResponse.data.userProfile.name;
+      console.log('Verify Response:', verifyResponse.data);
+
+      // Handle the actual response structure from backend
+      const ticketData = verifyResponse.data.ticket;
+      const eventData = verifyResponse.data.event;
+      const userData = verifyResponse.data.user;
+
+      // Build eventDetails from the response
+      const eventDetails: EventDetails = {
+        event_name: eventData?.event_name || 'Unknown Event',
+        event_address: eventData?.event_address || 'N/A',
+        date: eventData?.date || 'N/A',
+        brand_name: eventData?.brand_name || 'N/A',
+        name: userData?.name || ticketData?.email || 'N/A',
+        checkedInAt: ticketData?.verified_at || undefined
+      };
+
+      if (userData && userData.name) {
+        eventDetails.name = userData.name;
       }
 
+      console.log('Event Details:', eventDetails);
+      console.log('Current User Brand:', currentUserBrand);
+      console.log('Event Brand:', eventData?.brand_name);
+
       const authorizedBrands = ['Roman', 'Down'];
-      if (eventDetails.brand_name !== currentUserBrand && !authorizedBrands.includes(currentUserBrand || '')) {
+      if (eventData?.brand_name !== currentUserBrand && !authorizedBrands.includes(currentUserBrand || '')) {
         setValidationResult({ status: 'unauthorized', message: 'Authorization Failed', details: eventDetails });
         return;
       }
 
-      if (verifyResponse.data.message === 'User token has already been verified') {
-        setValidationResult({ status: 'used', message: 'Ticket Already Used', details: eventDetails });
-        return;
-      }
-
+      // Since the backend sets isVerified to true upon successful verification in this request,
+      // a successful response (200 OK) means it was just verified and is valid.
+      // If the ticket was ALREADY used BEFORE this request, the backend would return a 400/error.
+      // Therefore, we treat this response as a valid, successfully verified ticket.
       setValidationResult({ status: 'valid', message: 'Ticket Validated!', details: eventDetails });
 
     } catch (err: any) {
+      console.error('Validation Error:', err);
       setValidationResult({
         status: 'invalid',
-        message: err.response?.data?.message || 'Invalid Ticket',
+        message: err.response?.data?.message || err.response?.data?.detail || 'Invalid Ticket',
       });
     } finally {
       setIsLoading(false);

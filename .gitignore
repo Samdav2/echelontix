@@ -10,6 +10,8 @@
 !.yarn/releases
 !.yarn/versions
 
+package.json
+paxkage-lock.json
 # testing
 /coverage
 
