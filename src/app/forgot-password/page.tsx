@@ -15,6 +15,11 @@ export default function ForgotPasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
@@ -68,8 +73,10 @@ export default function ForgotPasswordPage() {
               className="w-full px-4 py-2 rounded bg-white text-black border-1 border-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-400"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              minLength={8}
               required
             />
+            <p className="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
           </div>
 
           {/*<div>
