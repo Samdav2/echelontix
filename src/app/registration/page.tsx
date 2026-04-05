@@ -38,11 +38,11 @@ interface EventDetails {
 
 // Represents the entire API response - flexible to handle different formats
 interface EventApiResponse {
-    events?: EventDetails;
-    event?: EventDetails | EventDetails[];
-    table?: Table[];
-    tables?: Table[];
-    [key: string]: any;
+  events?: EventDetails;
+  event?: EventDetails | EventDetails[];
+  table?: Table[];
+  tables?: Table[];
+  [key: string]: any;
 }
 
 
@@ -71,11 +71,11 @@ const EventForm: React.FC = () => {
     gender: '',
     selectedTicket: { type: 'regular', price: 0 },
   });
-   const router = useRouter();
+  const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
   const [ticketGenerated, setTicketGenerated] = useState(false);
   const [generatedTicketData, setGeneratedTicketData] = useState<any>(null);
-          const api_url = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
+  const api_url = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
 
 
 
@@ -101,8 +101,8 @@ const EventForm: React.FC = () => {
     const fetchEventDetails = async () => {
       setIsLoading(true);
       setError(null);
-        const api_url = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
-        console.log("Testing API", api_url)
+      const api_url = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
+      console.log("Testing API", api_url)
       try {
         const getEventUrl = `${api_url}/event/getEvent?eventId=`;
         // The response is now expected to be an object with 'events' and 'table' properties
@@ -343,11 +343,11 @@ const EventForm: React.FC = () => {
       let userId;
       const storedUserData = localStorage.getItem('userData');
       if (storedUserData) {
-          const parsedData = JSON.parse(storedUserData);
-          userId = parsedData.userID || parsedData.user_id || parsedData.profile?.user_id;
+        const parsedData = JSON.parse(storedUserData);
+        userId = parsedData.userID || parsedData.user_id || parsedData.profile?.user_id;
       }
       if (!userId) {
-          userId = crypto.randomUUID();
+        userId = crypto.randomUUID();
       }
 
       const fullName = `${formData.firstName} ${formData.lastName}`;
@@ -369,18 +369,18 @@ const EventForm: React.FC = () => {
 
       const attendUrl = `${api_url}/event/attendEvent`;
       const attendPayload = new URLSearchParams({
-          event_id: eventDetails!.id.toString(),
-          email: formData.email,
-          ticket_type: formData.selectedTicket.type,
-          token: token,
+        event_id: eventDetails!.id.toString(),
+        email: formData.email,
+        ticket_type: formData.selectedTicket.type,
+        token: token,
       });
       // qrcode_url is optional but schema says it exists
       attendPayload.append("qrcode_url", `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${token}`);
 
       await axios.post(attendUrl, attendPayload.toString(), {
-          headers: {
-              'Content-Type': 'application/x-www-form-urlencoded'
-          }
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
       });
 
       setTicketGenerated(true);
@@ -419,30 +419,38 @@ const EventForm: React.FC = () => {
   const getTicketOptions = () => {
     if (!eventDetails) return [];
 
-    const options = [];
+    const options: { label: string; value: string }[] = [];
+    const tableNames = new Set(tables.map(t => t.name.toLowerCase().trim()));
 
-    // Standard tickets
-    if (parseFloat(eventDetails.price) >= 0) options.push({ label: `Regular - ₦${eventDetails.price}`, value: `regular-${eventDetails.price}` });
-    if (parseFloat(eventDetails.vip_price) > 0) options.push({ label: `VIP - ₦${eventDetails.vip_price}`, value: `vip-${eventDetails.vip_price}` });
-    if (parseFloat(eventDetails.vvip_price) > 0) options.push({ label: `VVIP - ₦${eventDetails.vvip_price}`, value: `vvip-${eventDetails.vvip_price}` });
-    if (parseFloat(eventDetails.vvvip_price) > 0) options.push({ label: `VVVIP - ₦${eventDetails.vvvip_price}`, value: `vvvip-${eventDetails.vvvip_price}` });
+    // Standard tickets - Only add if not already defined as a table
+    if (parseFloat(eventDetails.price) >= 0 && !tableNames.has('regular')) {
+      options.push({ label: `Regular - ₦${eventDetails.price}`, value: `regular-${eventDetails.price}` });
+    }
+    if (parseFloat(eventDetails.vip_price) > 0 && !tableNames.has('vip')) {
+      options.push({ label: `VIP - ₦${eventDetails.vip_price}`, value: `vip-${eventDetails.vip_price}` });
+    }
+    if (parseFloat(eventDetails.vvip_price) > 0 && !tableNames.has('vvip')) {
+      options.push({ label: `VVIP - ₦${eventDetails.vvip_price}`, value: `vvip-${eventDetails.vvip_price}` });
+    }
+    if (parseFloat(eventDetails.vvvip_price) > 0 && !tableNames.has('vvvip')) {
+      options.push({ label: `VVVIP - ₦${eventDetails.vvvip_price}`, value: `vvvip-${eventDetails.vvvip_price}` });
+    }
 
     // Dynamic tables from the API
     if (tables.length > 0) {
-        tables.forEach(table => {
-            options.push({
-                label: `${table.name} (Capacity: ${table.capacity}) - ₦${table.price}`,
-                // Use table name as type for simplicity
-                value: `${table.name.replace(/\s+/g, '_')}-${table.price}`
-            });
+      tables.forEach(table => {
+        options.push({
+          label: `${table.name} (Capacity: ${table.capacity}) - ₦${table.price}`,
+          value: `${table.name.replace(/\s+/g, '_')}-${table.price}`
         });
+      });
     }
 
     return options;
   };
 
   if (isLoading) return <div className="min-h-screen bg-black flex items-center justify-center text-white"><Loader2 className="animate-spin" /> Loading Event...</div>;
-  if (error) return <div className="min-h-screen bg-black flex items-center justify-center text-red-500"><AlertCircle className="mr-2"/>{error}</div>;
+  if (error) return <div className="min-h-screen bg-black flex items-center justify-center text-red-500"><AlertCircle className="mr-2" />{error}</div>;
   if (!eventDetails) return <div className="min-h-screen bg-black flex items-center justify-center text-white">Event not found.</div>;
 
   const formattedDate = {
@@ -455,52 +463,52 @@ const EventForm: React.FC = () => {
     <section className="w-full min-h-screen bg-contain bg-top bg-repeat text-white relative" style={{ backgroundImage: "url('/assets/echelontix.jpeg')" }}>
       <AnimatePresence>
         {ticketGenerated ? (
-            <motion.div key="success" initial={{opacity: 0}} animate={{opacity: 1}} className="relative z-20 flex flex-col items-center justify-center min-h-screen p-4">
-                <div className="bg-black/50 backdrop-blur-lg p-8 rounded-2xl text-center border border-yellow-400/50 max-w-lg">
-                    <CheckCircle className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
-                    <h2 className="text-3xl font-bold mb-2">Registration Complete!</h2>
-                    <p className="text-gray-300 mb-6">Your ticket has been generated. Download it now and get ready for an amazing experience.</p>
-                    <button onClick={() => createStyledPDF(generatedTicketData)} className="w-full flex items-center justify-center gap-2 bg-yellow-400 text-black font-bold py-3 rounded-lg hover:bg-yellow-300 transition-all duration-300">
-                        <Download />
-                        Download Your Ticket (PDF)
-                    </button>
-                </div>
-            </motion.div>
+          <motion.div key="success" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative z-20 flex flex-col items-center justify-center min-h-screen p-4">
+            <div className="bg-black/50 backdrop-blur-lg p-8 rounded-2xl text-center border border-yellow-400/50 max-w-lg">
+              <CheckCircle className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+              <h2 className="text-3xl font-bold mb-2">Registration Complete!</h2>
+              <p className="text-gray-300 mb-6">Your ticket has been generated. Download it now and get ready for an amazing experience.</p>
+              <button onClick={() => createStyledPDF(generatedTicketData)} className="w-full flex items-center justify-center gap-2 bg-yellow-400 text-black font-bold py-3 rounded-lg hover:bg-yellow-300 transition-all duration-300">
+                <Download />
+                Download Your Ticket (PDF)
+              </button>
+            </div>
+          </motion.div>
         ) : (
-            <motion.div key="form" initial={{opacity: 0}} animate={{opacity: 1}} className="relative z-10 max-w-6xl mx-auto px-4 py-20 flex flex-col lg:flex-row gap-10 items-start lg:items-center justify-between">
-                <div className="text-white max-w-lg space-y-6">
-                    <img src={eventDetails.picture ? (eventDetails.picture.startsWith("http") ? eventDetails.picture : `${process.env.NEXT_PUBLIC_API_URL}/${eventDetails.picture}`) : '/placeholder-image.png'} alt={eventDetails.event_name} className="w-full sm:w-80 border-4 border-yellow-400 rounded-lg shadow-lg" />
-                    <div className="space-y-2">
-                        <p className="text-4xl font-extrabold">{formattedDate.day}<span className="text-lg block font-semibold">{formattedDate.month} {formattedDate.year}</span></p>
-                        <p className="text-sm uppercase">Entry at {eventDetails.time_in}</p>
-                        <p className="text-sm">Venue: {eventDetails.event_address}</p>
-                        <div className="mt-4"><p className="font-semibold">Event Summary</p><p className="text-sm">{eventDetails.summary}</p></div>
-                    </div>
+          <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative z-10 max-w-6xl mx-auto px-4 py-20 flex flex-col lg:flex-row gap-10 items-start lg:items-center justify-between">
+            <div className="text-white max-w-lg space-y-6">
+              <img src={eventDetails.picture ? (eventDetails.picture.startsWith("http") ? eventDetails.picture : `${process.env.NEXT_PUBLIC_API_URL}/${eventDetails.picture}`) : '/placeholder-image.png'} alt={eventDetails.event_name} className="w-full sm:w-80 border-4 border-yellow-400 rounded-lg shadow-lg" />
+              <div className="space-y-2">
+                <p className="text-4xl font-extrabold">{formattedDate.day}<span className="text-lg block font-semibold">{formattedDate.month} {formattedDate.year}</span></p>
+                <p className="text-sm uppercase">Entry at {eventDetails.time_in}</p>
+                <p className="text-sm">Venue: {eventDetails.event_address}</p>
+                <div className="mt-4"><p className="font-semibold">Event Summary</p><p className="text-sm">{eventDetails.summary}</p></div>
+              </div>
+            </div>
+            <div className="bg-[#1f1f1f] bg-opacity-90 p-8 rounded-lg shadow-2xl w-full max-w-md">
+              <h2 className="text-xl font-bold text-center uppercase mb-1">{eventDetails.event_name}</h2>
+              <p className="text-sm text-center text-gray-300 mb-6">Attendee Information</p>
+              <form className="space-y-4">
+                <div className="flex gap-3">
+                  <input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} placeholder="First Name" className="w-1/2 px-4 py-2 bg-gray-800 border border-gray-700 rounded text-sm focus:ring-yellow-400" required />
+                  <input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} placeholder="Last Name" className="w-1/2 px-4 py-2 bg-gray-800 border border-gray-700 rounded text-sm focus:ring-yellow-400" required />
                 </div>
-                <div className="bg-[#1f1f1f] bg-opacity-90 p-8 rounded-lg shadow-2xl w-full max-w-md">
-                    <h2 className="text-xl font-bold text-center uppercase mb-1">{eventDetails.event_name}</h2>
-                    <p className="text-sm text-center text-gray-300 mb-6">Attendee Information</p>
-                    <form className="space-y-4">
-                        <div className="flex gap-3">
-                            <input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} placeholder="First Name" className="w-1/2 px-4 py-2 bg-gray-800 border border-gray-700 rounded text-sm focus:ring-yellow-400" required />
-                            <input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} placeholder="Last Name" className="w-1/2 px-4 py-2 bg-gray-800 border border-gray-700 rounded text-sm focus:ring-yellow-400" required />
-                        </div>
-                        <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="Email Address" className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded text-sm focus:ring-yellow-400" required />
-                        <select name="selectedTicket" value={`${formData.selectedTicket.type}-${formData.selectedTicket.price}`} onChange={handleTicketSelection} className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded text-sm text-gray-300 focus:ring-yellow-400" required>
-                            <option value="">Select a Ticket - {formData.selectedTicket.type}</option>
-                            {getTicketOptions().map(opt => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
-                        </select>
+                <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="Email Address" className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded text-sm focus:ring-yellow-400" required />
+                <select name="selectedTicket" value={`${formData.selectedTicket.type}-${formData.selectedTicket.price}`} onChange={handleTicketSelection} className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded text-sm text-gray-300 focus:ring-yellow-400" required>
+                  <option value="">Select a Ticket - {formData.selectedTicket.type}</option>
+                  {getTicketOptions().map(opt => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
+                </select>
 
-                        {isProcessing ? (
-                            <button disabled className="w-full flex justify-center bg-yellow-500/50 text-black font-semibold py-2 rounded transition"><Loader2 className="animate-spin" />Processing...</button>
-                        ) : formData.selectedTicket.price > 0 ? (
-                            <button type="button" onClick={handlePaystackPayment} className="w-full bg-yellow-500 text-black font-semibold py-2 rounded hover:bg-yellow-400 transition">Proceed to Payment</button>
-                        ) : (
-                            <button type="button" onClick={handlePaymentSuccess} className="w-full bg-yellow-500 text-black font-semibold py-2 rounded hover:bg-yellow-400 transition">Get Free Ticket</button>
-                        )}
-                    </form>
-                </div>
-            </motion.div>
+                {isProcessing ? (
+                  <button disabled className="w-full flex justify-center bg-yellow-500/50 text-black font-semibold py-2 rounded transition"><Loader2 className="animate-spin" />Processing...</button>
+                ) : formData.selectedTicket.price > 0 ? (
+                  <button type="button" onClick={handlePaystackPayment} className="w-full bg-yellow-500 text-black font-semibold py-2 rounded hover:bg-yellow-400 transition">Proceed to Payment</button>
+                ) : (
+                  <button type="button" onClick={handlePaymentSuccess} className="w-full bg-yellow-500 text-black font-semibold py-2 rounded hover:bg-yellow-400 transition">Get Free Ticket</button>
+                )}
+              </form>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </section>
