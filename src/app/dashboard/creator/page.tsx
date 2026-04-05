@@ -507,16 +507,15 @@ export default function CreatorDashboard() {
       if (tables.length > 0) {
         console.log(`Updating ${tables.length} tables for event ID: ${eventDetails.id}`);
         // RESTORED: This logic is exactly as provided by the user.
-        // Note: The backend route for this should be '/updateTableCreation' and it should
-        // expect the eventId within the payload if it's not in the URL.
-        const updateTablesUrl = `${url}/event/updateTableCreation/`;
+        // Update: Removed trailing slash and ensured proper payload format
+        const updateTablesUrl = `${url}/event/updateTableCreation`;
         const tablesPayload = {
-          eventId: eventDetails.id, // Ensure the eventId is sent if the backend needs it
           tables: tables.map(t => ({
             id: t.id,
             tableName: t.name,
-            tablePrice: t.price,
-            tableCapacity: t.capacity
+            tablePrice: parseFloat(t.price) || 0,
+            tableCapacity: parseInt(t.capacity.toString(), 10) || 0,
+            available_tables: parseInt(t.capacity.toString(), 10) || 0, // Default to capacity
           }))
         };
         await axios.put(updateTablesUrl, tablesPayload);

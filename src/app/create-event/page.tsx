@@ -249,7 +249,8 @@ const CreateEventPage: React.FC = () => {
             });
 
             // Get the event_id from the response
-            const eventId = eventResponse.data?.id || eventResponse.data?.event_id;
+            // The backend returns { message: "...", userInfo: { id: ... } }
+            const eventId = eventResponse.data?.userInfo?.id || eventResponse.data?.id || eventResponse.data?.event_id;
             console.log('Event created with ID:', eventId);
 
             // 2. Create Tables (Tickets) AFTER event is created
@@ -257,8 +258,9 @@ const CreateEventPage: React.FC = () => {
                 setFeedback({ message: "Creating ticket types...", type: 'info' });
                 const tablesPayload = tickets.map(ticket => ({
                     tableName: ticket.name,
-                    tablePrice: parseInt(ticket.price, 10) || 0,
+                    tablePrice: parseFloat(ticket.price) || 0,
                     tableCapacity: parseInt(ticket.capacity, 10) || 0,
+                    available_tables: parseInt(ticket.capacity, 10) || 0, // Default to capacity
                 }));
 
                 const tableApiPayload = {
