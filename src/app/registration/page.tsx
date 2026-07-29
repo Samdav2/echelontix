@@ -155,13 +155,7 @@ const EventForm: React.FC = () => {
     setFormData(prev => ({ ...prev, selectedTicket: { type, price } }));
   };
 
-  const generateTicketToken = (name: string, eventName: string) => {
-    const nameParts = name.split(' ');
-    const initials = (nameParts[0]?.charAt(0) || 'X') + (nameParts[1]?.charAt(0) || 'X');
-    const brandPrefix = eventName.substring(0, 5).toUpperCase();
-    const randomNumbers = Math.floor(1000 + Math.random() * 9000);
-    return `${initials}${brandPrefix}${randomNumbers}`;
-  };
+
 
   const createStyledPDF = (ticketData: any) => {
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
@@ -214,7 +208,7 @@ const EventForm: React.FC = () => {
     doc.setTextColor(colors.gold[0], colors.gold[1], colors.gold[2]);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(6);
-    const authCode = `#ECH-VIP-${Math.floor(Math.random() * 9999).toString().padStart(4, '0')}-ALPHA`;
+    const authCode = ticketData.ticketCode || `#ECH-VIP-${Math.floor(Math.random() * 9999).toString().padStart(4, '0')}-ALPHA`;
     doc.text(`CERTIFICATE OF AUTHENTICITY: ${authCode}`, ticketX + ticketWidth - 8, ticketY + 6, { align: 'right' });
 
     // 6. Personalization Section - "WE HAVE BEEN EXPECTING YOU"
@@ -340,19 +334,26 @@ const EventForm: React.FC = () => {
   const handlePaymentSuccess = async () => {
     setIsProcessing(true);
     try {
-      let userId;
-      const storedUserData = localStorage.getItem('userData');
-      if (storedUserData) {
-        const parsedData = JSON.parse(storedUserData);
-        userId = parsedData.userID || parsedData.user_id || parsedData.profile?.user_id;
-      }
-      if (!userId) {
-        userId = crypto.randomUUID();
-      }
-
       const fullName = `${formData.firstName} ${formData.lastName}`;
-      const token = generateTicketToken(fullName, eventDetails!.event_name);
-      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${token}`;
+      const attendUrl = `${api_url}/event/attendEvent`;
+      const attendPayload = new URLSearchParams({
+        event_id: eventDetails!.id.toString(),
+        email: formData.email,
+        ticket_type: formData.selectedTicket.type,
+      });
+
+      const response = await axios.post(attendUrl, attendPayload.toString(), {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      });
+
+      const responseData = response.data;
+      const ticketObj = responseData.ticket || responseData;
+
+      const token = ticketObj.token || ticketObj.ticket_code;
+      const ticketCode = ticketObj.ticket_code || token;
+      const qrCodeUrl = ticketObj.qrcode_url || `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${token}`;
 
       // Process image URL for Cloudinary/legacy support
       const processedImageUrl = eventDetails!.picture
@@ -360,32 +361,22 @@ const EventForm: React.FC = () => {
         : '/placeholder-image.png';
 
       const ticketDataForPDF = {
-        attendeeName: fullName, eventName: eventDetails!.event_name, eventDate: eventDetails!.date,
-        eventTime: eventDetails!.time_in, ticketType: formData.selectedTicket.type, ticketToken: token,
-        qrCodeUrl: qrCodeUrl, eventImage: processedImageUrl
+        attendeeName: fullName,
+        eventName: eventDetails!.event_name,
+        eventDate: eventDetails!.date,
+        eventTime: eventDetails!.time_in,
+        ticketType: formData.selectedTicket.type,
+        ticketToken: token,
+        ticketCode: ticketCode,
+        qrCodeUrl: qrCodeUrl,
+        eventImage: processedImageUrl
       };
 
       setGeneratedTicketData(ticketDataForPDF);
-
-      const attendUrl = `${api_url}/event/attendEvent`;
-      const attendPayload = new URLSearchParams({
-        event_id: eventDetails!.id.toString(),
-        email: formData.email,
-        ticket_type: formData.selectedTicket.type,
-        token: token,
-      });
-      // qrcode_url is optional but schema says it exists
-      attendPayload.append("qrcode_url", `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${token}`);
-
-      await axios.post(attendUrl, attendPayload.toString(), {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
-      });
-
       setTicketGenerated(true);
 
     } catch (err) {
+      console.error("Attendance failed:", err);
       setError("Failed to generate ticket after payment. Please contact support.");
     } finally {
       setIsProcessing(false);
