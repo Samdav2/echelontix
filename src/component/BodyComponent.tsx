@@ -75,7 +75,7 @@ const EventCard = ({
       <div className="relative w-full h-40">
         {getStatusBadge()}
         <img
-          src={image ? (image.startsWith("http") ? image : `${process.env.NEXT_PUBLIC_API_URL}/${image}`) : placeholderImg}
+          src={image ? (image.startsWith("http") ? image : `${(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/\/$/, '')}/${image.replace(/^\//, '')}`) : placeholderImg}
           alt={title}
           className="absolute inset-0 w-full h-full object-cover"
           onError={(e) => { (e.target as HTMLImageElement).src = placeholderImg }}
@@ -138,14 +138,14 @@ const LandingPage = () => {
   const [events, setEvents] = useState<EventsByCategory>({});
   const [categories, setCategories] = useState<string[]>(["All", ...predefinedCategories]);
   const [isLoading, setIsLoading] = useState(true);
-  const url = process.env.NEXT_PUBLIC_API_URL;
+  const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/\/$/, '');
 
 
   useEffect(() => {
     const fetchEvents = async () => {
       setIsLoading(true);
       try {
-        const response = await axios.get(`${url}event/getAllEvent`);
+        const response = await axios.get(`${baseUrl}/event/getAllEvent`);
 
         const apiEvents: EventFromAPI[] = response.data.event;
 
