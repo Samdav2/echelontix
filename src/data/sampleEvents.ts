@@ -1,0 +1,108 @@
+import { EchelontixTicketData } from '../types/ticket';
+
+export const SAMPLE_TICKETS: Record<string, EchelontixTicketData> = {
+  grandAffair: {
+    event: {
+      name: 'THE GRAND AFFAIR',
+      tagline: 'An Evening of Extraordinary Experiences',
+      artwork: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1000&auto=format&fit=crop',
+      date: '20 AUG 2026',
+      time: '8:00 PM',
+      venue: 'Eko Hotel & Suites',
+      location: 'Lagos, Nigeria',
+      organizer: 'Echelontix Luxury Events',
+    },
+    attendee: {
+      name: 'BILLY OLOWOPARIJA',
+      email: 'billy@echelontix.com',
+      seatNumber: 'VVIP Table 4',
+    },
+    ticket: {
+      tier: 'VVIP',
+      ticketId: 'ETX-VVIP-7K29F81',
+      securityCode: '8F29-7A31-X92',
+      serialNumber: 'SN-2026-88019',
+      status: 'VALID',
+      validEntries: 1,
+      perks: ['Private Lounge Access', 'Champagne Welcome', 'Valet Parking'],
+    },
+  },
+  metGalaAuction: {
+    event: {
+      name: 'THE METROPOLITAN GALA',
+      tagline: 'Private Art Collection & Philanthropy Auction',
+      artwork: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=1000&auto=format&fit=crop',
+      date: '14 SEP 2026',
+      time: '7:30 PM',
+      venue: 'The Metropolitan Club',
+      location: 'Fifth Avenue, New York',
+      organizer: 'The Heritage Foundation',
+    },
+    attendee: {
+      name: 'ELIZABETH VANDERBILT',
+      email: 'elizabeth@vanderbilt.ny',
+      seatNumber: 'Table 12 - Seat 2',
+    },
+    ticket: {
+      tier: 'TABLE',
+      ticketId: 'ETX-TBL-90184A2',
+      securityCode: '91F8-23C4-M77',
+      serialNumber: 'SN-2026-90412',
+      status: 'VALID',
+      validEntries: 8,
+      perks: ['Full Table Service', 'Private Curator Tour', 'Black Tie Banquet'],
+    },
+  },
+  monacoYacht: {
+    event: {
+      name: 'MONACO YACHT LOUNGE',
+      tagline: 'Formula 1 Midnight Soirée & Afterparty',
+      artwork: 'https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?q=80&w=1000&auto=format&fit=crop',
+      date: '24 MAY 2026',
+      time: '10:00 PM',
+      venue: 'Port Hercule Deck',
+      location: 'Monte Carlo, Monaco',
+      organizer: 'Riviera Private Club',
+    },
+    attendee: {
+      name: 'ALEXANDER VON STRATEN',
+      email: 'alex@straten.mc',
+      seatNumber: 'Deck A - VIP Pass',
+    },
+    ticket: {
+      tier: 'VIP',
+      ticketId: 'ETX-VIP-3B901C4',
+      securityCode: '4C12-88B1-K09',
+      serialNumber: 'SN-2026-10492',
+      status: 'VALID',
+      validEntries: 1,
+      perks: ['Yacht Deck Access', 'Open Bar', 'Helipad Shuttle'],
+    },
+  },
+  techSummit: {
+    event: {
+      name: 'GLOBAL EXECUTIVE SUMMIT',
+      tagline: 'The Future of AI & Sovereign Capital',
+      artwork: 'https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=1000&auto=format&fit=crop',
+      date: '11 NOV 2026',
+      time: '09:00 AM',
+      venue: 'Burj Al Arab Ballroom',
+      location: 'Dubai, UAE',
+      organizer: 'Apex Capital Forum',
+    },
+    attendee: {
+      name: 'DR. TARIQ AL-MANSOOR',
+      email: 'tariq@apexcapital.ae',
+      seatNumber: 'Executive Hall - Row A',
+    },
+    ticket: {
+      tier: 'REGULAR',
+      ticketId: 'ETX-REG-10492F7',
+      securityCode: '2B33-91A0-P55',
+      serialNumber: 'SN-2026-30219',
+      status: 'VALID',
+      validEntries: 1,
+      perks: ['Keynote Hall Access', 'Networking Lunch', 'Delegate Briefing'],
+    },
+  },
+};

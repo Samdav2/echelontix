@@ -3,13 +3,12 @@
 import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';
 import axios from 'axios';
-import { jsPDF } from "jspdf";
 import { motion, AnimatePresence } from 'framer-motion';
-import { Ticket, Download, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
-import { eventNames } from "process";
+import { Download, Loader2, CheckCircle, AlertCircle, Sparkles } from 'lucide-react';
+import { MobileTicketView } from '../../component/ticket/MobileTicketView';
+import { generateMobileTicketPdf } from '../../services/pdfService';
+import { EchelontixTicketData, TicketTier } from '../../types/ticket';
 
-// --- Type Definitions ---
-// Represents a single table from the API
 interface Table {
   id: number;
   name: string;
@@ -17,8 +16,6 @@ interface Table {
   price: string;
 }
 
-
-// Updated to match the 'events' object from the API
 interface EventDetails {
   id: number;
   event_name: string;
@@ -36,7 +33,6 @@ interface EventDetails {
   bank: string;
 }
 
-// Represents the entire API response - flexible to handle different formats
 interface EventApiResponse {
   events?: EventDetails;
   event?: EventDetails | EventDetails[];
@@ -45,23 +41,10 @@ interface EventApiResponse {
   [key: string]: any;
 }
 
-
-interface FormData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  gender: string;
-  selectedTicket: {
-    type: string;
-    price: number;
-  };
-}
-
-// --- Main Form Component ---
 const EventForm: React.FC = () => {
   const searchParams = useSearchParams();
   const [eventDetails, setEventDetails] = useState<EventDetails | null>(null);
-  const [tables, setTables] = useState<Table[]>([]); // State to hold table data
+  const [tables, setTables] = useState<Table[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -74,11 +57,10 @@ const EventForm: React.FC = () => {
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
   const [ticketGenerated, setTicketGenerated] = useState(false);
-  const [generatedTicketData, setGeneratedTicketData] = useState<any>(null);
+  const [generatedTicketData, setGeneratedTicketData] = useState<EchelontixTicketData | null>(null);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+
   const api_url = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
-
-
-
 
   useEffect(() => {
     const script = document.createElement("script");
@@ -102,15 +84,10 @@ const EventForm: React.FC = () => {
       setIsLoading(true);
       setError(null);
       const api_url = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
-      console.log("Testing API", api_url)
       try {
         const getEventUrl = `${api_url}/event/getEvent?eventId=`;
-        // The response is now expected to be an object with 'events' and 'table' properties
         const response = await axios.get<EventApiResponse>(`${getEventUrl}${eventId}`);
 
-        console.log("Event API Response:", response.data);
-
-        // Handle different response structures
         let details: EventDetails | null = null;
         let tableData: Table[] = [];
 
@@ -118,25 +95,20 @@ const EventForm: React.FC = () => {
           details = response.data.events;
           tableData = response.data.table || [];
         } else if (response.data && response.data.event) {
-          // Handle single event response
           details = Array.isArray(response.data.event) ? response.data.event[0] : (response.data.event as EventDetails);
           tableData = response.data.table || response.data.tables || [];
         } else if (response.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
-          // Handle direct event object
           details = response.data as EventDetails;
           tableData = [];
         } else {
-          throw new Error(`Event data is not in the expected format. Received: ${JSON.stringify(response.data)}`);
+          throw new Error(`Event data format invalid.`);
         }
 
         setEventDetails(details);
         setTables(tableData);
-
-        // Set default ticket price from the main event price
         setFormData(prev => ({ ...prev, selectedTicket: { type: 'regular', price: parseFloat(details!.price) || 0 } }));
       } catch (err) {
         setError("Could not load event details. Please check the event ID and try again.");
-        console.error(err);
       } finally {
         setIsLoading(false);
       }
@@ -155,180 +127,19 @@ const EventForm: React.FC = () => {
     setFormData(prev => ({ ...prev, selectedTicket: { type, price } }));
   };
 
-
-
-  const createStyledPDF = (ticketData: any) => {
-    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-
-    // --- LUXURY COLORS ---
-    const colors = {
-      black: [0, 0, 0],
-      deepCharcoal: [10, 10, 10],
-      gold: [197, 160, 89],
-      lightGold: [231, 209, 146],
-      subtleGray: [26, 26, 26],
-      white: [255, 255, 255]
-    };
-
-    // 1. Master Background Canvas
-    doc.setFillColor(colors.black[0], colors.black[1], colors.black[2]);
-    doc.rect(0, 0, pageWidth, pageHeight, 'F');
-
-    // 2. The Ticket Card - Centered
-    const ticketX = (pageWidth - 260) / 2;
-    const ticketY = (pageHeight - 130) / 2;
-    const ticketWidth = 260;
-    const ticketHeight = 130;
-
-    doc.setFillColor(colors.deepCharcoal[0], colors.deepCharcoal[1], colors.deepCharcoal[2]);
-    doc.setDrawColor(colors.gold[0], colors.gold[1], colors.gold[2]);
-    doc.setLineWidth(0.8);
-    doc.roundedRect(ticketX, ticketY, ticketWidth, ticketHeight, 3, 3, 'FD');
-
-    // 3. Cyber Background Grid (subtle decorative lines)
-    // Removed because they overlapped with the text and caused visual clutter.
-
-    // 4. Left Aesthetic Border with Member Rank
-    doc.setFillColor(colors.gold[0], colors.gold[1], colors.gold[2]);
-    doc.rect(ticketX, ticketY, 4, ticketHeight, 'F');
-    // Removed rotated text that was mispositioned and illegible
-
-
-    // 5. Header - ECHELONTIX Logo
-    doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(24);
-    doc.text('ECHELON', ticketX + 8, ticketY + 8);
-    doc.setTextColor(colors.gold[0], colors.gold[1], colors.gold[2]);
-    doc.text('TIX', ticketX + 8 + doc.getTextWidth('ECHELON'), ticketY + 8);
-
-    // Certificate of Authenticity (top right)
-    doc.setTextColor(colors.gold[0], colors.gold[1], colors.gold[2]);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(6);
-    const authCode = ticketData.ticketCode || `#ECH-VIP-${Math.floor(Math.random() * 9999).toString().padStart(4, '0')}-ALPHA`;
-    doc.text(`CERTIFICATE OF AUTHENTICITY: ${authCode}`, ticketX + ticketWidth - 8, ticketY + 6, { align: 'right' });
-
-    // 6. Personalization Section - "WE HAVE BEEN EXPECTING YOU"
-    doc.setTextColor(colors.gold[0], colors.gold[1], colors.gold[2]);
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(8);
-    doc.text('WE HAVE BEEN EXPECTING YOU,', ticketX + 8, ticketY + 18);
-
-    // Guest Name (Large & Bold)
-    doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(28);
-    const guestName = ticketData.attendeeName.toUpperCase();
-    doc.text(guestName, ticketX + 8, ticketY + 30);
-
-    // Welcome Message
-    doc.setTextColor(colors.gold[0], colors.gold[1], colors.gold[2]);
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(7);
-    doc.text('Your presence defines the evening. Welcome to the Inner Circle.', ticketX + 8, ticketY + 36);
-
-    // 7. Main Event Title
-    doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(32);
-    const eventTitle = ticketData.eventName.substring(0, 25).toUpperCase();
-    doc.text(eventTitle, ticketX + 8, ticketY + 48);
-
-    // Gold underline
-    doc.setDrawColor(colors.gold[0], colors.gold[1], colors.gold[2]);
-    doc.setLineWidth(1.5);
-    doc.line(ticketX + 8, ticketY + 50, ticketX + 50, ticketY + 50);
-
-    // Event Subtitle
-    doc.setTextColor(colors.gold[0], colors.gold[1], colors.gold[2]);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.text('A SUPREME ASSEMBLY OF GLOBAL VISIONARIES', ticketX + 8, ticketY + 55);
-
-    // 8. Data Grid (Arrival Date, Seating Category, Privilege Level)
-    const dataY = ticketY + 72;
-    doc.setTextColor(colors.gold[0], colors.gold[1], colors.gold[2]);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(6);
-    doc.text('ARRIVAL DATE', ticketX + 8, dataY);
-    doc.text('SEATING CATEGORY', ticketX + 85, dataY);
-    doc.text('PRIVILEGE LEVEL', ticketX + 160, dataY);
-
-    // Data values
-    doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    const formattedDate = new Date(ticketData.eventDate).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    }).toUpperCase();
-    doc.text(formattedDate, ticketX + 8, dataY + 8);
-    doc.text('PRIVATE BALCONY', ticketX + 85, dataY + 8);
-    doc.text('UNRESTRICTED', ticketX + 160, dataY + 8);
-
-    // 9. Vertical Perforation Line (The "Stub" separator)
-    doc.setDrawColor(colors.gold[0], colors.gold[1], colors.gold[2]);
-    doc.setLineWidth(0.3);
-    const perfLineX = ticketX + ticketWidth - 65;
-    // Dashed line effect
-    for (let y = ticketY + 2; y < ticketY + ticketHeight - 2; y += 2.5) {
-      doc.line(perfLineX, y, perfLineX, y + 1.5);
+  const handleDownloadPdf = async () => {
+    if (!generatedTicketData) return;
+    setIsDownloadingPdf(true);
+    try {
+      await generateMobileTicketPdf(
+        'registration-ticket-pass',
+        `${generatedTicketData.ticket.ticketId}_Pass.pdf`
+      );
+    } catch (err) {
+      console.error('PDF download error:', err);
+    } finally {
+      setIsDownloadingPdf(false);
     }
-
-    // 10. QR Code Section (Right stub)
-    const qrX = ticketX + ticketWidth - 55;
-    const qrY = ticketY + 10;
-    const qrSize = 48;
-
-    // QR Frame (Gold border)
-    doc.setDrawColor(colors.gold[0], colors.gold[1], colors.gold[2]);
-    doc.setLineWidth(1.5);
-    doc.rect(qrX, qrY, qrSize, qrSize);
-
-    // Add the actual QR image
-    if (ticketData.qrCodeUrl) {
-      doc.addImage(ticketData.qrCodeUrl, 'PNG', qrX + 2, qrY + 2, qrSize - 4, qrSize - 4);
-    }
-
-    // "VERIFY SCAN AT ENTRY" text
-    doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7);
-    doc.text('VERIFY SCAN AT ENTRY', qrX + qrSize / 2, qrY + qrSize + 6, { align: 'center' });
-
-    // Valid for one entry
-    doc.setTextColor(colors.gold[0], colors.gold[1], colors.gold[2]);
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(5);
-    doc.text('VALID FOR ONE PRESTIGIOUS ENTRY', qrX + qrSize / 2, qrY + qrSize + 10, { align: 'center' });
-
-    // 11. Digital URL & Slogan at bottom
-    doc.setTextColor(colors.gold[0], colors.gold[1], colors.gold[2]);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    // Center it in the main stub (between left border and right stub)
-    const mainSectionWidth = ticketWidth - 65;
-    doc.text('WWW.ECHELONTIX.COM.NG', ticketX + mainSectionWidth / 2, ticketY + ticketHeight - 8, { align: 'center' });
-
-    // Brand Slogan
-    doc.setTextColor(colors.subtleGray[0], colors.subtleGray[1], colors.subtleGray[2]);
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(5);
-    doc.text('EXCELLENCE IS NOT AN ACT, BUT A HABIT.', ticketX + mainSectionWidth / 2, ticketY + ticketHeight - 4, { align: 'center' });
-
-    // 12. Authorization text
-    doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(6);
-    // Move to the left corner to avoid overlap with URL
-    doc.text('Authorized By Echelon Executive Board', ticketX + 8, ticketY + ticketHeight - 8);
-
-    // Save the PDF
-    doc.save(`${ticketData.ticketToken}-ticket.pdf`);
   };
 
   const handlePaymentSuccess = async () => {
@@ -351,28 +162,38 @@ const EventForm: React.FC = () => {
       const responseData = response.data;
       const ticketObj = responseData.ticket || responseData;
 
-      const token = ticketObj.token || ticketObj.ticket_code;
+      const token = ticketObj.token || ticketObj.ticket_code || `ETX-${Date.now().toString().slice(-6)}`;
       const ticketCode = ticketObj.ticket_code || token;
-      const qrCodeUrl = ticketObj.qrcode_url || `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${token}`;
 
-      // Process image URL for Cloudinary/legacy support
       const processedImageUrl = eventDetails!.picture
         ? (eventDetails!.picture.startsWith("http") ? eventDetails!.picture : `${process.env.NEXT_PUBLIC_API_URL}/${eventDetails!.picture}`)
-        : '/placeholder-image.png';
+        : 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1000&auto=format&fit=crop';
 
-      const ticketDataForPDF = {
-        attendeeName: fullName,
-        eventName: eventDetails!.event_name,
-        eventDate: eventDetails!.date,
-        eventTime: eventDetails!.time_in,
-        ticketType: formData.selectedTicket.type,
-        ticketToken: token,
-        ticketCode: ticketCode,
-        qrCodeUrl: qrCodeUrl,
-        eventImage: processedImageUrl
+      const tier: TicketTier = (formData.selectedTicket.type.toUpperCase() as TicketTier) || 'VIP';
+
+      const fullTicketData: EchelontixTicketData = {
+        event: {
+          name: eventDetails!.event_name,
+          tagline: `Admit One • ₦${formData.selectedTicket.price.toLocaleString()}`,
+          artwork: processedImageUrl,
+          date: eventDetails!.date || '20 AUG 2026',
+          time: eventDetails!.time_in || '8:00 PM',
+          venue: eventDetails!.event_address || 'Main Venue',
+          location: 'Gate A • Main Entrance',
+        },
+        attendee: {
+          name: fullName,
+          seatNumber: `Tier Access: ${tier}`,
+        },
+        ticket: {
+          tier: tier,
+          ticketId: token,
+          securityCode: ticketCode.length > 12 ? `${ticketCode.slice(-4)}-SEC` : ticketCode,
+          status: 'VALID',
+        },
       };
 
-      setGeneratedTicketData(ticketDataForPDF);
+      setGeneratedTicketData(fullTicketData);
       setTicketGenerated(true);
 
     } catch (err) {
@@ -396,9 +217,7 @@ const EventForm: React.FC = () => {
       email: formData.email,
       amount: formData.selectedTicket.price * 100,
       ref: (new Date()).getTime().toString(),
-      onClose: () => {
-        // setError("Payment was cancelled."); // Optional: show message on close
-      },
+      onClose: () => {},
       callback: () => {
         handlePaymentSuccess();
       },
@@ -406,14 +225,11 @@ const EventForm: React.FC = () => {
     handler.openIframe();
   };
 
-  // This function now dynamically generates all ticket options
   const getTicketOptions = () => {
     if (!eventDetails) return [];
-
     const options: { label: string; value: string }[] = [];
     const tableNames = new Set(tables.map(t => t.name.toLowerCase().trim()));
 
-    // Standard tickets - Only add if not already defined as a table
     if (parseFloat(eventDetails.price) >= 0 && !tableNames.has('regular')) {
       options.push({ label: `Regular - ₦${eventDetails.price}`, value: `regular-${eventDetails.price}` });
     }
@@ -427,7 +243,6 @@ const EventForm: React.FC = () => {
       options.push({ label: `VVVIP - ₦${eventDetails.vvvip_price}`, value: `vvvip-${eventDetails.vvvip_price}` });
     }
 
-    // Dynamic tables from the API
     if (tables.length > 0) {
       tables.forEach(table => {
         options.push({
@@ -453,16 +268,40 @@ const EventForm: React.FC = () => {
   return (
     <section className="w-full min-h-screen bg-contain bg-top bg-repeat text-white relative" style={{ backgroundImage: "url('/assets/echelontix.jpeg')" }}>
       <AnimatePresence>
-        {ticketGenerated ? (
-          <motion.div key="success" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative z-20 flex flex-col items-center justify-center min-h-screen p-4">
-            <div className="bg-black/50 backdrop-blur-lg p-8 rounded-2xl text-center border border-yellow-400/50 max-w-lg">
-              <CheckCircle className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
-              <h2 className="text-3xl font-bold mb-2">Registration Complete!</h2>
-              <p className="text-gray-300 mb-6">Your ticket has been generated. Download it now and get ready for an amazing experience.</p>
-              <button onClick={() => createStyledPDF(generatedTicketData)} className="w-full flex items-center justify-center gap-2 bg-yellow-400 text-black font-bold py-3 rounded-lg hover:bg-yellow-300 transition-all duration-300">
-                <Download />
-                Download Your Ticket (PDF)
-              </button>
+        {ticketGenerated && generatedTicketData ? (
+          <motion.div key="success" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative z-20 flex flex-col items-center justify-center min-h-screen p-4 py-12">
+            <div className="bg-[#0C0C0E]/95 backdrop-blur-xl p-8 rounded-3xl text-center border border-[#C8A96B]/50 max-w-xl w-full shadow-2xl flex flex-col items-center">
+              <div className="w-14 h-14 rounded-full bg-[#C8A96B]/20 border border-[#C8A96B] flex items-center justify-center mb-4 text-[#C8A96B]">
+                <CheckCircle className="w-8 h-8" />
+              </div>
+              <span className="text-[10px] font-mono text-[#C8A96B] tracking-[0.25em] uppercase mb-1 flex items-center gap-1">
+                <Sparkles className="w-3 h-3" /> CONFIRMED CREDENTIAL
+              </span>
+              <h2 className="text-2xl font-bold font-serif-display mb-1 text-white">Registration Complete</h2>
+              <p className="text-xs text-gray-400 mb-6 max-w-md">Your luxury mobile pass has been generated. Present barcode at entry or save as high-DPI PDF.</p>
+
+              {/* LIVE LUXURY MOBILE TICKET VIEW */}
+              <div className="mb-6 w-full flex justify-center scale-95">
+                <MobileTicketView ticketData={generatedTicketData} elementId="registration-ticket-pass" />
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
+                <button
+                  onClick={handleDownloadPdf}
+                  disabled={isDownloadingPdf}
+                  className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-[#C8A96B] to-[#E3C98A] text-black font-bold py-3.5 px-6 rounded-xl hover:brightness-110 transition-all duration-300 uppercase tracking-widest text-xs font-mono shadow-lg disabled:opacity-50"
+                >
+                  {isDownloadingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                  <span>{isDownloadingPdf ? 'Exporting PDF...' : 'Download Pass (PDF)'}</span>
+                </button>
+
+                <button
+                  onClick={() => router.push('/dashboard/attendee')}
+                  className="px-6 py-3.5 bg-[#1C1C1F] hover:bg-[#28282D] text-white font-semibold text-xs rounded-xl border border-white/10 transition-all font-mono uppercase tracking-wider"
+                >
+                  Go To Dashboard
+                </button>
+              </div>
             </div>
           </motion.div>
         ) : (
@@ -506,7 +345,6 @@ const EventForm: React.FC = () => {
   );
 };
 
-// Page component with Suspense wrapper
 export default function RegistrationPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>}>
