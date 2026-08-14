@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useEffect, useState, Suspense } from "react";
+import React, { useEffect, useState, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, Loader2, CheckCircle, AlertCircle, Sparkles } from 'lucide-react';
+import { Download, Loader2, CheckCircle, AlertCircle, Sparkles, Clock } from 'lucide-react';
 import { MobileTicketView } from '../../component/ticket/MobileTicketView';
 import { generateMobileTicketPdf } from '../../services/pdfService';
 import { EchelontixTicketData, TicketTier } from '../../types/ticket';
@@ -61,6 +61,19 @@ const EventForm: React.FC = () => {
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
   const api_url = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
+
+  // Guard: Determine if the event date has already passed
+  const isPastEvent = useMemo(() => {
+    if (!eventDetails?.date) return false;
+    try {
+      const eventDate = new Date(eventDetails.date);
+      // Set guard cutoff to end of event date (23:59:59)
+      eventDate.setHours(23, 59, 59, 999);
+      return eventDate < new Date();
+    } catch (e) {
+      return false;
+    }
+  }, [eventDetails?.date]);
 
   useEffect(() => {
     const script = document.createElement("script");
@@ -143,6 +156,11 @@ const EventForm: React.FC = () => {
   };
 
   const handlePaymentSuccess = async () => {
+    if (isPastEvent) {
+      setError("Registration is closed. Tickets cannot be acquired for a past event.");
+      return;
+    }
+
     setIsProcessing(true);
     try {
       const fullName = `${formData.firstName} ${formData.lastName}`;
@@ -205,6 +223,11 @@ const EventForm: React.FC = () => {
   };
 
   const handlePaystackPayment = () => {
+    if (isPastEvent) {
+      setError("Registration is closed. Cannot purchase tickets for a past event.");
+      return;
+    }
+
     // @ts-ignore
     if (!window.PaystackPop) {
       setError("Payment service failed to load. Please refresh.");
@@ -259,10 +282,12 @@ const EventForm: React.FC = () => {
   if (error) return <div className="min-h-screen bg-black flex items-center justify-center text-red-500"><AlertCircle className="mr-2" />{error}</div>;
   if (!eventDetails) return <div className="min-h-screen bg-black flex items-center justify-center text-white">Event not found.</div>;
 
+  const parsedDate = new Date(eventDetails.date);
+  const isValidDate = !isNaN(parsedDate.getTime());
   const formattedDate = {
-    day: new Date(eventDetails.date).getDate(),
-    month: new Date(eventDetails.date).toLocaleString('en-US', { month: 'long' }).toUpperCase(),
-    year: new Date(eventDetails.date).getFullYear()
+    day: isValidDate ? parsedDate.getDate() : '--',
+    month: isValidDate ? parsedDate.toLocaleString('en-US', { month: 'long' }).toUpperCase() : 'EVENT',
+    year: isValidDate ? parsedDate.getFullYear() : 'DATE'
   };
 
   return (
@@ -315,26 +340,50 @@ const EventForm: React.FC = () => {
                 <div className="mt-4"><p className="font-semibold">Event Summary</p><p className="text-sm">{eventDetails.summary}</p></div>
               </div>
             </div>
+
             <div className="bg-[#1f1f1f] bg-opacity-90 p-8 rounded-lg shadow-2xl w-full max-w-md">
               <h2 className="text-xl font-bold text-center uppercase mb-1">{eventDetails.event_name}</h2>
               <p className="text-sm text-center text-gray-300 mb-6">Attendee Information</p>
+
+              {/* Past Event Banner Guard */}
+              {isPastEvent && (
+                <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/40 flex items-start gap-3 text-red-200">
+                  <Clock className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-red-300">Registration Closed</h4>
+                    <p className="text-xs mt-1 text-red-200/90 leading-relaxed">
+                      This event took place on {formattedDate.day} {formattedDate.month} {formattedDate.year}. Tickets are no longer available for purchase.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <form className="space-y-4">
                 <div className="flex gap-3">
-                  <input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} placeholder="First Name" className="w-1/2 px-4 py-2 bg-gray-800 border border-gray-700 rounded text-sm focus:ring-yellow-400" required />
-                  <input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} placeholder="Last Name" className="w-1/2 px-4 py-2 bg-gray-800 border border-gray-700 rounded text-sm focus:ring-yellow-400" required />
+                  <input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} disabled={isPastEvent} placeholder="First Name" className="w-1/2 px-4 py-2 bg-gray-800 border border-gray-700 rounded text-sm focus:ring-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed" required />
+                  <input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} disabled={isPastEvent} placeholder="Last Name" className="w-1/2 px-4 py-2 bg-gray-800 border border-gray-700 rounded text-sm focus:ring-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed" required />
                 </div>
-                <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="Email Address" className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded text-sm focus:ring-yellow-400" required />
-                <select name="selectedTicket" value={`${formData.selectedTicket.type}-${formData.selectedTicket.price}`} onChange={handleTicketSelection} className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded text-sm text-gray-300 focus:ring-yellow-400" required>
+                <input type="email" name="email" value={formData.email} onChange={handleInputChange} disabled={isPastEvent} placeholder="Email Address" className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded text-sm focus:ring-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed" required />
+                <select name="selectedTicket" value={`${formData.selectedTicket.type}-${formData.selectedTicket.price}`} onChange={handleTicketSelection} disabled={isPastEvent} className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded text-sm text-gray-300 focus:ring-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed" required>
                   <option value="">Select a Ticket - {formData.selectedTicket.type}</option>
                   {getTicketOptions().map(opt => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
                 </select>
 
-                {isProcessing ? (
-                  <button disabled className="w-full flex justify-center bg-yellow-500/50 text-black font-semibold py-2 rounded transition"><Loader2 className="animate-spin" />Processing...</button>
+                {isPastEvent ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full bg-red-950/60 border border-red-500/40 text-red-300 font-semibold py-3 rounded-xl cursor-not-allowed uppercase tracking-wider text-xs font-mono flex items-center justify-center gap-2"
+                  >
+                    <AlertCircle className="w-4 h-4 text-red-400" />
+                    <span>Registration Closed (Past Event)</span>
+                  </button>
+                ) : isProcessing ? (
+                  <button disabled className="w-full flex items-center justify-center gap-2 bg-yellow-500/50 text-black font-semibold py-3 rounded-xl transition"><Loader2 className="w-4 h-4 animate-spin" />Processing...</button>
                 ) : formData.selectedTicket.price > 0 ? (
-                  <button type="button" onClick={handlePaystackPayment} className="w-full bg-yellow-500 text-black font-semibold py-2 rounded hover:bg-yellow-400 transition">Proceed to Payment</button>
+                  <button type="button" onClick={handlePaystackPayment} className="w-full bg-yellow-500 text-black font-semibold py-3 rounded-xl hover:bg-yellow-400 transition font-mono uppercase tracking-wider text-xs">Proceed to Payment</button>
                 ) : (
-                  <button type="button" onClick={handlePaymentSuccess} className="w-full bg-yellow-500 text-black font-semibold py-2 rounded hover:bg-yellow-400 transition">Get Free Ticket</button>
+                  <button type="button" onClick={handlePaymentSuccess} className="w-full bg-yellow-500 text-black font-semibold py-3 rounded-xl hover:bg-yellow-400 transition font-mono uppercase tracking-wider text-xs">Get Free Ticket</button>
                 )}
               </form>
             </div>
